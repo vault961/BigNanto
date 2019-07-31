@@ -57,29 +57,24 @@ public:
 	uint8 ReadData[BUFLEN];
 	uint32 Size;
 	int32 ReadBytes;
-	uint32 userNum;
+	uint32 CurrentUserNum;
 	uint32 sumLen;
 	uint32 Len;
 
-	void PacketHandler();
-	bool FormatIP4ToNumber(FString& TheIP, uint8(&Out)[4]);
-	void SendMessage(PACKET_TYPE Type, char * Body, uint32 size);
-	void PacketProcess(Packet& packet);
-
 	UPROPERTY(EditAnywhere)
-	class ACharacterSpawner* SpawnActor;
-	UPROPERTY(EditAnywhere)
-	class ACharacterSpawner* SpawnActor2;
+	class ACharacterSpawner* CharacterSpawner;
+	/*UPROPERTY(EditAnywhere)
+	class ACharacterSpawner* SpawnActor2;*/
 
-	class PlayerManager* PlayerManager;
+	//class PlayerManager* PlayerManager;
 	class APlayerCharacter* PlayerList[100];
-	class APlayerCharacter* MyPlayer;
+	//class APlayerCharacter* MyPlayer;
+	//class APlayerCharacter* MyActor;
 	class APlayerController* PlayerController;
-	class APlayerCharacter* MyActor;
-
 	FVector NewPosition;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = PlayerManager)
-	TSubclassOf<class APlayerCharacter> Warrior;
-
+	void PacketHandler();
+	//bool FormatIP4ToNumber(FString& TheIP, uint8(&Out)[4]);
+	void SendMessage(PACKET_TYPE Type, char * Body, uint32 size);
+	void PacketProcess(Packet& packet);
 };

@@ -16,12 +16,9 @@
 UBigNantoGameInstance::UBigNantoGameInstance()
 {
 	BufArraySize = 0;
-	userNum = 0;
+	CurrentUserNum = 0;
 	sumLen = 0;
-	// 워리어 클래스
-	static ConstructorHelpers::FClassFinder<APawn> WarriorBP(TEXT("/Game/Blueprints/Warrior_BP"));
-	if (WarriorBP.Class)
-		Warrior = WarriorBP.Class;
+
 }
 
 void UBigNantoGameInstance::Init()
@@ -47,10 +44,10 @@ void UBigNantoGameInstance::Init()
 
 	TSharedRef<FInternetAddr> RemoteAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	FIPv4Address address;
-	FString IP = "172.18.33.156";
+	FString IP = "172.18.33.156";			// 서버 아이피
 	FIPv4Address::Parse(IP, address);
 	RemoteAddress->SetIp(address.Value);
-	RemoteAddress->SetPort(27015);
+	RemoteAddress->SetPort(27015);			// 서버 포트
 
 	if (ConnectionSocket->Connect(*RemoteAddress)) {
 		UE_LOG(LogTemp, Warning, TEXT("Connection done."));
@@ -62,13 +59,18 @@ void UBigNantoGameInstance::Init()
 		return;
 	}
 
-	TArray<AActor*> FoundActors;
+	//TArray<AActor*> FoundActors;
+	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacterSpawner::StaticClass(), FoundActors);
+
+	//// 월드에 스폰엑터가 있는지 체크
+	//if (FoundActors.Num() > 0)
+	//{
+	//	SpawnActor = Cast<ACharacterSpawner>(FoundActors[0]);
+	//	SpawnActor2 = Cast<ACharacterSpawner>(FoundActors[1]);
+	//}
+
 	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerController::StaticClass(), FoundActors);
 	//PlayerController = Cast<APlayerController>(FoundActors[0]);
-
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacterSpawner::StaticClass(), FoundActors);
-	SpawnActor = Cast<ACharacterSpawner>(FoundActors[0]);
-	SpawnActor2 = Cast<ACharacterSpawner>(FoundActors[1]);
 
 	char name[5] = "yeap";
 	SendMessage(PACKET_TYPE::MYLOGIN, name, 10);
@@ -82,6 +84,12 @@ bool UBigNantoGameInstance::Tick(float DeltaTime)
 	return true;
 }
 
+void UBigNantoGameInstance::Shutdown()
+{
+	UE_LOG(LogTemp, Log, TEXT("GameInstance Shutdown..........."));
+	FTicker::GetCoreTicker().RemoveTicker(TickDelegateHandle);
+	ConnectionSocket->Close();
+}
 void UBigNantoGameInstance::PacketHandler()
 {
 	if (ConnectionSocket->HasPendingData(Size)) {
@@ -140,44 +148,42 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 si
 
 void UBigNantoGameInstance::PacketProcess(Packet& packet) 
 {
+	if (!GetWorld())
+		return;
+
 	switch (packet.type) {
 	case PACKET_TYPE::OTHERLOGIN:
-		MyActor = GetWorld()->SpawnActorDeferred<APlayerCharacter>(Warrior.Get(), SpawnActor2->GetTransform());
-		MyActor->IsMine = false;
-		MyActor->FinishSpawning(SpawnActor2->GetTransform());
-		PlayerList[packet.userID] = MyActor;
+	{
+		PlayerList[packet.userID] = CharacterSpawner->SpawnCharacter(1, false);
+		CurrentUserNum++;
 		UE_LOG(LogTemp, Warning, TEXT("other user login"));
-		userNum++;
 		break;
+	}
 	case PACKET_TYPE::MYLOGIN:
-		MyActor = GetWorld()->SpawnActorDeferred<APlayerCharacter>(Warrior.Get(), SpawnActor->GetTransform());
-		MyActor->IsMine = true;
-		MyActor->FinishSpawning(SpawnActor->GetTransform());
-		PlayerList[packet.userID] = MyActor;
-		MyPlayer = MyActor;
+	{
+		APlayerCharacter* MyCharacter = CharacterSpawner->SpawnCharacter(2, true);
+		PlayerList[packet.userID] = MyCharacter;
+
 		if (nullptr == PlayerController)
-		{
 			PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-		}
-		PlayerController->Possess(MyActor);
+		PlayerController->Possess(MyCharacter);
+
+		CurrentUserNum++;
 		UE_LOG(LogTemp, Warning, TEXT("myuser login"));
-		userNum++;
 		break;
+	}
 	case PACKET_TYPE::UPDATEPOS:
+	{
 		NewPosition.Y = *(float*)packet.body;
 		NewPosition.Z = *(float*)(packet.body + 4);
 		//UE_LOG(LogTemp, Warning, TEXT("%d user : "), packet.userID);
 		PlayerList[packet.userID]->UpdatePosition(NewPosition);
 		break;
+	}
 	case PACKET_TYPE::UPDATESTATUS:
+	{
 		PlayerList[packet.userID]->UpdateStatus();
 		break;
 	}
-}
-
-void UBigNantoGameInstance::Shutdown()
-{
-	UE_LOG(LogTemp, Log, TEXT("GameInstance Shutdown..........."));
-	FTicker::GetCoreTicker().RemoveTicker(TickDelegateHandle);
-	ConnectionSocket->Close();
+	}
 }
