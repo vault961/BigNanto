@@ -71,6 +71,8 @@ APlayerCharacter* ACharacterSpawner::SpawnCharacter(int CharacterNum, bool bIsMi
 	UWorld* const World = GetWorld();
 	if (World)
 	{
+		// 진서가 여길 바꿧다
+
 		//// 랜덤한 각도 세팅
 		//FRotator SpawnRotation;
 		//SpawnRotation.Yaw = 90.f;
