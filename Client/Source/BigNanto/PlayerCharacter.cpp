@@ -127,7 +127,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 		destination = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
 		//destination = NewLocation;
 
-		SetActorLocation(destination, true);
+		SetActorLocation(destination, false);
 
 	}
 	else {

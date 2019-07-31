@@ -71,15 +71,6 @@ APlayerCharacter* ACharacterSpawner::SpawnCharacter(int CharacterNum, bool bIsMi
 	UWorld* const World = GetWorld();
 	if (World)
 	{
-		//// 랜덤한 각도 세팅
-		//FRotator SpawnRotation;
-		//SpawnRotation.Yaw = 90.f;
-		//SpawnRotation.Pitch = 0.f;
-		//SpawnRotation.Roll = 0.f;
-
-		//// 랜덤한 위치 세팅
-		//FVector SpawnLocation = GetRandomPointInVolume();
-
 		FTransform SpawnTransform(GetRandomPointInVolume());
 		APlayerCharacter* Character;
 
