@@ -1,0 +1,334 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "PlayerCharacter.h"
+#include "Engine/Engine.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Animation/AnimInstance.h"
+#include "Camera/CameraComponent.h"
+#include "Components/InputComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "PlayerCharacterAnim.h"
+#include "Weapon.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Particles/ParticleSystem.h"
+#include "Kismet/GameplayStatics.h"
+#include "Weapon_MagicWand.h"
+#include "BigNantoGameInstance.h"
+
+// Sets default values
+APlayerCharacter::APlayerCharacter()
+{
+	PrimaryActorTick.bCanEverTick = true;
+
+	// 캡슐 컴포넌트
+	GetCapsuleComponent()->InitCapsuleSize(40.f, 90.f);													// 캐릭터 캡슐 사이즈
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::BeginOverlap);	// 캐릭터 충돌 함수 위임
+	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;							// 캐릭터 위에 누가 올라 설 수 있는지
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));										// 캐릭터 충돌 채널 = Pawn 타입
+	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));											// 캐릭터 매쉬 충돌 채널 = NoCollision
+
+	// 컨트롤러 회전 사용 안함
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
+	bUseControllerRotationYaw = false;
+
+	// 카메라붐 생성 이후에 루트 컴포넌트에 붙여줌
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->SetupAttachment(RootComponent);
+	CameraBoom->bAbsoluteRotation = true;											// 캐릭터가 회전해도 카메라 회전에 영향 받지 않음
+	CameraBoom->bDoCollisionTest = false;											
+	CameraBoom->TargetArmLength = 1000.f;											// 카메라 거리
+	CameraBoom->SocketOffset = FVector(0.f, 0.f, 75.f);								// 카메라 오프셋 위치 (높이 조정
+	CameraBoom->RelativeRotation = FRotator(0.f, 180.f, 0.f);						// 카메라 회전각도
+
+	// 카메라생성 후 붐에 붙여주기
+	SideViewCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("SideViewCamera"));
+	SideViewCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	SideViewCameraComponent->bUsePawnControlRotation = false;									// 카메라는 회전하지 않음
+
+	// 캐릭터 무브먼트 설정
+	//GetCharacterMovement()->bOrientRotationToMovement = true; // 이동하는 방향으로 회전
+	//GetCharacterMovement()->RotationRate = FRotator(0.f, 1000.f, 0.f); // 회전하는 비율
+	GetCharacterMovement()->GravityScale = 3.f;		// 중력값
+	GetCharacterMovement()->AirControl = 0.8f;		// 공중에서 컨트롤 할 수 있는 힘
+	GetCharacterMovement()->JumpZVelocity = 1300.f; // 점프력
+	GetCharacterMovement()->GroundFriction = 5.f;	// 마찰
+	GetCharacterMovement()->MaxWalkSpeed = 1000.f;	// 최대속도
+	GetCharacterMovement()->MaxFlySpeed = 1000.f;	// 최대 공중 속도
+
+	// 캐릭터 정보 초기화
+	DamagePercent = 0.f;
+	CurrentState = ECharacterState::EIdle;
+	JumpCount = 0;
+	LifeCount = 0;
+	CharacterClass = ECharacterClass::ENULLCLASS;
+
+	// 히트 파티클
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> HitParticleAsset(TEXT("/Game/StarterContent/Particles/P_Explosion"));
+	if (HitParticleAsset.Succeeded())
+		HitParticle = HitParticleAsset.Object;
+}
+
+void APlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// 애님 인스턴스 불러오기
+	if (GetMesh())
+	{
+		AnimInstance = Cast<UPlayerCharacterAnim>(GetMesh()->GetAnimInstance());
+	}
+
+	// 무기 달아주기
+	UChildActorComponent* ChildActorComp = FindComponentByClass<UChildActorComponent>();
+	if (ChildActorComp)
+	{
+		Weapon = Cast<AWeapon>(ChildActorComp->GetChildActor());
+		if(Weapon)
+			Weapon->WeaponOwner = this;
+	}
+
+	// 포세스 함수 
+	//GetWorld()->GetPlayerControllerIterator()->Get()->Possess(this);
+
+	//TArray<AActor*> FoundActors;
+	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATestClient::StaticClass(), FoundActors);
+	//TestClient = Cast<ATestClient>(FoundActors[0]);
+	
+	GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());
+	
+	//SetActorTickInterval(0.2f);
+	PlayerLocation = GetActorLocation();
+	//NewLocation.Y = PlayerLocation.Y;
+	//NewLocation.Z = PlayerLocation.Z;
+	SendDelay = 0;
+}
+
+void APlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (GetActorLocation().X != 0.f)
+	{
+		FVector ActorLocation = GetActorLocation();
+		ActorLocation.X = 0.f;
+		SetActorLocation(ActorLocation);
+	}
+
+	PlayerLocation = GetActorLocation();
+
+	// 보정
+	// 플레이어 아니면
+	if (!IsMine)
+	{
+		destination = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
+		//destination = NewLocation;
+
+		SetActorLocation(destination, true);
+
+	}
+	else {
+		// 내 위치 송신
+		SendDelay += 1;
+		if (SendDelay == 3) {
+			memcpy(body, &PlayerLocation.Y, sizeof(PlayerLocation.Y));
+			memcpy(body + 4, &PlayerLocation.Z, sizeof(PlayerLocation.Z));
+			GameInstance->SendMessage(PACKET_TYPE::UPDATEPOS, body, 14);
+			SendDelay = 0;
+		}
+	}
+
+}
+
+// Called to bind functionality to input
+void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	// 게임플레이 키 바인딩
+	check(PlayerInputComponent);
+	// 이동 
+	PlayerInputComponent->BindAxis("MoveRight", this, &APlayerCharacter::MoveRight);
+	// 점프
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCharacter::DoJump);
+	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+	// 공격
+	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &APlayerCharacter::Attack);
+	PlayerInputComponent->BindAction("Attack", IE_Released, this, &APlayerCharacter::StopAttack);
+	// 막기
+	PlayerInputComponent->BindAction("SpecialAbility", IE_Pressed, this, &APlayerCharacter::SpecialAbility);
+	PlayerInputComponent->BindAction("SpecialAbility", IE_Released, this, &APlayerCharacter::StopSpecialAbility);
+}
+
+bool APlayerCharacter::GetWeaponActive() const
+{
+	return Weapon ? Weapon->bIsActive : false;
+}
+
+void APlayerCharacter::SetWeaponActive(bool bIsActive)
+{
+	if (Weapon)
+		Weapon->bIsActive = bIsActive;
+}
+
+ECharacterState APlayerCharacter::GetCurrentState() const
+{
+	return CurrentState;
+}
+
+void APlayerCharacter::SetCurrentState(ECharacterState NewState)
+{
+	CurrentState = NewState;
+}
+
+void APlayerCharacter::UpdatePosition(FVector New)
+{
+	NewLocation = New;
+	UE_LOG(LogTemp, Warning, TEXT("update position %f %f"), New.Y, New.Z);
+}
+
+void APlayerCharacter::UpdateStatus()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("update status"));
+}
+
+void APlayerCharacter::BeginOverlap(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
+{
+	// 충돌한 엑터 모두 배열에 넣기
+	TArray<AActor*> CollectedActors;
+	GetCapsuleComponent()->GetOverlappingActors(CollectedActors);
+
+	for (int32 iCollected = 0; iCollected < CollectedActors.Num(); ++iCollected)
+	{
+		// 충돌한 액터가 무기인경우 & 그 무기가 자신의 무기가 아닌 경우 & 무기가 활성화 되어있는 경우
+		AWeapon* const OverlappedWeapon = Cast<AWeapon>(CollectedActors[iCollected]);
+		if (OverlappedWeapon && (Weapon != OverlappedWeapon))
+		{
+			if (OverlappedWeapon->bIsActive)
+			{
+				// 피격 함수 호출
+				AttackHit(OverlappedWeapon);
+			}
+			AWeapon_MagicWand* const OverlappedAbility = Cast<AWeapon_MagicWand>(OverlappedWeapon);
+			if (OverlappedAbility && OverlappedAbility->bIsIncinerateOn)
+			{
+				AbilityHit(OverlappedAbility);
+			}
+
+		}
+	}
+}
+
+void APlayerCharacter::DoJump()
+{
+	if (CurrentState != ECharacterState::EIdle && CurrentState != ECharacterState::EJump)
+		return;
+
+	// 땅에 닿으면 점프 카운트 초기화
+	// 애님 노티파이에서도 초기화 해주긴 하는데 혹시 몰라서
+	if (GetCharacterMovement()->IsMovingOnGround() == true)
+	{
+		JumpCount = 0;
+	}
+
+	// 점프 카운트 2미만일시 점프 가능(최대 2단 점프)
+	if (JumpCount < 2)
+	{
+		SetCurrentState(ECharacterState::EJump);
+		LaunchCharacter(FVector(0.f, 0.f, 1.f) * GetCharacterMovement()->JumpZVelocity, false, true);
+		JumpCount++;
+	}
+}
+
+void APlayerCharacter::MoveRight(float val)
+{
+	//UE_LOG(LogTemp, Log, TEXT("Input Value : %f"), val);
+	if ((CurrentState == ECharacterState::EIdle) || (CurrentState == ECharacterState::EJump))
+	{
+		if(0 != val)
+			SetActorRelativeRotation(FRotator(0.f, -90.f * FMath::RoundFromZero(val), 0.f ));
+
+		// 입력받은 방향으로 이동
+		AddMovementInput(FVector(0.f, -1.f, 0.f), val);
+	}
+}
+
+void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
+{
+	// 피격한 캐릭터의 전방 벡터
+	FVector EnemyForwardVector = OverlappedWeapon->WeaponOwner->GetActorForwardVector();
+	//UE_LOG(LogTemp, Log, TEXT("EnemyForwardVector : %s"), *EnemyForwardVector.ToString());
+
+	// 적과 나의 벡터 내적
+	// 내적 값이 양수면 적이 내 뒤에 있음, 음수면 적이 내 앞에 있음
+	float HitDot = FVector::DotProduct(GetActorForwardVector(), EnemyForwardVector);
+	
+	if (AnimInstance)
+	{
+		// 적이 내 앞에 있고 방어 중 일시 (방패 히트 애니메이션)
+		if ((HitDot < 0 ) && CurrentState == ECharacterState::EDefend)
+		{
+			AnimInstance->PlayDefendHit();
+		}
+		// 적이 내 뒤에 있거나 방어 중이 아닐시 (일반 히트 애니메이션)
+		else
+		{
+			HitandKnockback(EnemyForwardVector, OverlappedWeapon->AttackDamage);
+		}
+	}
+}
+
+void APlayerCharacter::AbilityHit(AWeapon_MagicWand * OverlappedAbility)
+{
+	FVector EnemyForwardVector = OverlappedAbility->WeaponOwner->GetActorForwardVector();
+	HitandKnockback(EnemyForwardVector, OverlappedAbility->IncinerateDamage);
+}
+
+void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
+{
+	// 현재행동 중단하고 EHit 상태로 바꿔주기
+	StopAttack();
+	StopSpecialAbility();
+	SetCurrentState(ECharacterState::EHit);
+
+	// 데미지 퍼센트에 히트 데미지 추가
+	DamagePercent += HitDamage;
+	// 공격 받은 방향으로 넉백
+	LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
+	AnimInstance->PlayGetHit();
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorTransform());
+}
+
+void APlayerCharacter::Attack()
+{
+	if (CurrentState != ECharacterState::EIdle)
+		return;
+
+	if (AnimInstance)
+	{
+		AnimInstance->PlayAttack();
+		AnimInstance->bIsAttacking = true;
+		SetCurrentState(ECharacterState::EAttack);
+	}
+}
+
+void APlayerCharacter::StopAttack()
+{
+	if (AnimInstance)
+	{
+		AnimInstance->bIsAttacking = false;
+	}
+}
+
+void APlayerCharacter::SpecialAbility()
+{
+	UE_LOG(LogTemp, Warning, TEXT("This character has no ability!!!"));
+}
+
+void APlayerCharacter::StopSpecialAbility()
+{
+	// THERE IS NO WAY STOP SPECIAL ABILITY OF THIS CHARACTER!!!
+}
