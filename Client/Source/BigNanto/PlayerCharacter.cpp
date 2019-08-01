@@ -64,7 +64,7 @@ APlayerCharacter::APlayerCharacter()
 	CurrentState = ECharacterState::EIdle;
 	JumpCount = 0;
 	LifeCount = 0;
-	CharacterClass = ECharacterClass::ENULLCLASS;
+	CharacterClass = ECharacterClass::EUnknown;
 
 	// 히트 파티클
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> HitParticleAsset(TEXT("/Game/StarterContent/Particles/P_Explosion"));
@@ -90,13 +90,6 @@ void APlayerCharacter::BeginPlay()
 		if(Weapon)
 			Weapon->WeaponOwner = this;
 	}
-
-	// 포세스 함수 
-	//GetWorld()->GetPlayerControllerIterator()->Get()->Possess(this);
-
-	//TArray<AActor*> FoundActors;
-	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATestClient::StaticClass(), FoundActors);
-	//TestClient = Cast<ATestClient>(FoundActors[0]);
 	
 	GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());
 	

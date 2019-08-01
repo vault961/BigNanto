@@ -22,7 +22,7 @@ enum class ECharacterState : uint8
 UENUM()
 enum class ECharacterClass : uint8
 {
-	ENULLCLASS,	// 클래스 미지정
+	EUnknown,	// 알 수 없는 클래스
 	EWarrior,	// 전사
 	EWizard,	// 마법사
 };
@@ -37,10 +37,7 @@ public:
 	APlayerCharacter();
 
 	virtual void BeginPlay() override;
-
 	virtual void Tick(float DeltaTime) override;
-	
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// 카메라를 부착할 스프링 암
@@ -87,6 +84,7 @@ public:
 	ECharacterState GetCurrentState() const;
 	void SetCurrentState(ECharacterState NewState);
 
+	// 캐릭터 직업
 	UPROPERTY(VisibleAnywhere, Category = CharacterInfo)
 	ECharacterClass CharacterClass;
 
@@ -127,6 +125,7 @@ public:
 	// 마법 피격
 	virtual void AbilityHit(class AWeapon_MagicWand* OverlappedAbility);
 	
+	// 피격 및 넉백 함수
 	virtual void HitandKnockback(FVector HitDirection, float HitDamage);
 
 	// 공격

@@ -18,7 +18,6 @@ UBigNantoGameInstance::UBigNantoGameInstance()
 	BufArraySize = 0;
 	CurrentUserNum = 0;
 	sumLen = 0;
-
 }
 
 void UBigNantoGameInstance::Init()
@@ -44,7 +43,8 @@ void UBigNantoGameInstance::Init()
 
 	TSharedRef<FInternetAddr> RemoteAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	FIPv4Address address;
-	FString IP = "172.18.33.156";			// 서버 아이피
+	//FString IP = "172.18.33.156";			// 서버 아이피
+	FString IP = "172.18.33.158";
 	FIPv4Address::Parse(IP, address);
 	RemoteAddress->SetIp(address.Value);
 	RemoteAddress->SetPort(27015);			// 서버 포트
@@ -59,19 +59,6 @@ void UBigNantoGameInstance::Init()
 		return;
 	}
 
-	//TArray<AActor*> FoundActors;
-	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacterSpawner::StaticClass(), FoundActors);
-
-	//// 월드에 스폰엑터가 있는지 체크
-	//if (FoundActors.Num() > 0)
-	//{
-	//	SpawnActor = Cast<ACharacterSpawner>(FoundActors[0]);
-	//	SpawnActor2 = Cast<ACharacterSpawner>(FoundActors[1]);
-	//}
-
-	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerController::StaticClass(), FoundActors);
-	//PlayerController = Cast<APlayerController>(FoundActors[0]);
-
 	char name[5] = "yeap";
 	SendMessage(PACKET_TYPE::MYLOGIN, name, 10);
 }
@@ -79,7 +66,6 @@ void UBigNantoGameInstance::Init()
 bool UBigNantoGameInstance::Tick(float DeltaTime)
 {
 	//UE_LOG(LogTemp, Warning, TEXT("GameInstance Ticking........."));
-
 	PacketHandler();
 	return true;
 }
@@ -90,6 +76,7 @@ void UBigNantoGameInstance::Shutdown()
 	FTicker::GetCoreTicker().RemoveTicker(TickDelegateHandle);
 	ConnectionSocket->Close();
 }
+
 void UBigNantoGameInstance::PacketHandler()
 {
 	if (ConnectionSocket->HasPendingData(Size)) {

@@ -11,13 +11,6 @@
 APlayerManager::APlayerManager()
 {
 	PrimaryActorTick.bCanEverTick = false;
-
-	//// ¿ö¸®¾î
-	//static ConstructorHelpers::FClassFinder<APawn> WarriorBP(TEXT("/Game/Blueprints/Warrior_BP"));
-	//if (WarriorBP.Class)
-	//	Warrior = WarriorBP.Class;
-
-	//TotalPlayers = 0;
 }
 
 void APlayerManager::AddPlayers()
