@@ -13,7 +13,6 @@ HANDLE CompletionPort;
 
 int AddSocket(int Socket) {
 	int idx;
-	UserListLock.WriteLock();
 	UserVecLock.WriteLock();
 	for (int i = 1; i < MAX_USER; i++) {
 		if (UserList[i].Connection == FALSE) {
@@ -30,7 +29,6 @@ int AddSocket(int Socket) {
 	myuser->Name[0] = NULL;
 
 	UserVecLock.WriteUnLock();
-	UserListLock.WriteUnLock();
 
 	return idx;
 }
@@ -44,7 +42,6 @@ User& GetUser(int idx) {
 
 void CompressArrays(int idx) {
 	printf("delete idx : %d\n", idx);
-	UserListLock.WriteLock();
 	UserVecLock.WriteLock();
 	UserList[idx].Connection = FALSE;
 	for (int k = 0; k < UserVec.size(); k++) {
@@ -54,7 +51,6 @@ void CompressArrays(int idx) {
 		}
 	}
 	UserVecLock.WriteUnLock();
-	UserListLock.WriteUnLock();
 }
 
 void Compress(char *source, int len) {
@@ -65,19 +61,11 @@ void Compress(char *source, int len) {
 }
 
 
-void CreateAccount(Packet *temppacket, char* name, char* buf, int len) {
-	temppacket->Type = PACKET_TYPE::MYLOGIN;
-	memcpy(name, buf, len);
-	name[len] = 0;
-
-	printf("%s 계정 생성\n", name);
-}
 
 void User::GetOthersInfo() {
 	User* fromuser;
 	int idx = Idx;
 	UserVecLock.ReadLock();
-	UserListLock.ReadLock();
 	for (int j = 0; j < UserVec.size(); j++) {
 		if (UserVec[j] != idx) {
 			fromuser = &UserList[UserVec[j]];
@@ -91,7 +79,7 @@ void User::GetOthersInfo() {
 				memcpy(buf + sizeof(char) + sizeof(float)*2, &fromuser->Damage, sizeof(wchar_t));
 				memcpy(buf + sizeof(char) + sizeof(float)*2 + sizeof(wchar_t), fromuser->Name, namelen);
 
-				Packet temppacket(PACKET_TYPE::OTHERLOGIN, namelen + FRONTLEN + sizeof(float)*2 + sizeof(wchar_t), UserVec[j], fromuser->Name);
+				Packet temppacket(PACKET_TYPE::LOGIN, namelen + FRONTLEN + sizeof(float)*2 + sizeof(wchar_t), UserVec[j], fromuser->Name);
 				SentInfo temp(temppacket);
 
 				if (ClientSocket.WaitingQueue.empty()) {
@@ -107,7 +95,6 @@ void User::GetOthersInfo() {
 		}
 	}
 	UserVecLock.ReadUnLock();
-	UserListLock.ReadUnLock();
 }
 
 void RecvProcess(char * source, int retValue, User& myuser) {
@@ -119,27 +106,42 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	memcpy(receiveBuffer + receivedSize, source, retValue);
 	receivedSize += retValue;
 
-	unsigned int len = *(unsigned int*)(receiveBuffer + TYPELEN + USERLEN);
+	if (receivedSize < FRONTLEN)
+		return;
+
+	wchar_t len = *(wchar_t*)(receiveBuffer + TYPELEN + USERLEN);
 	printf("%d recieve\n", len);
 
 	if (receivedSize >= len) {
 		Packet temppacket((PACKET_TYPE)*receiveBuffer, len, myuser.Idx, receiveBuffer + FRONTLEN);
-		myuser.PosY = *(float*)(temppacket.Body);
-		myuser.PosZ = *(float*)(temppacket.Body + sizeof(float));
-		myuser.Damage = *(wchar_t*)(temppacket.Body + sizeof(float) * 2);
+		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - len); // buf 당기기
+		myuser.ClientSocket.ReceivedBufferSize -= len;  // buf resize
 
 		// if user hasn't name, put name
-		if (temppacket.Type == PACKET_TYPE::MYLOGIN) {
-			CreateAccount(&temppacket, myuser.Name, myuser.ClientSocket.ReceiveBuffer + FRONTLEN, len - FRONTLEN);
+		if (temppacket.Type == PACKET_TYPE::LOGIN) {
+			myuser.Class = *temppacket.Body;
+			myuser.PosY = *(float*)(temppacket.Body + 1);
+			myuser.PosZ = *(float*)(temppacket.Body + sizeof(float) + 1);
+			myuser.Damage = *(wchar_t*)(temppacket.Body + sizeof(float) * 2 + 1);
+			memcpy(myuser.Name, temppacket.Body + sizeof(float)*3 + 1, len - FRONTLEN - 1 - sizeof(float)*3);
+			myuser.Name[len - FRONTLEN] = 0;
+
 			printf("username :%s ", myuser.Name);
 		}
-		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize-len); // buf 당기기
+		else if (temppacket.Type == PACKET_TYPE::ENTER) {
+			temppacket.Body[0] = myuser.Idx;
+			SentInfo temp(temppacket);
+			myuser.ClientSocket.WaitingQueue.Push(temp);
+			Sender* PerIoData = new Sender();
+			myuser.SendFront(PerIoData);
 
-		myuser.ClientSocket.ReceivedBufferSize -= len;  // buf resize
-		//printf("packet : %d\n", len + TIMESTAMPLEN);
-
+			return;
+		}
+		// broadcast
 		g_OrderQueue.Push(temppacket);
 		SetEvent(OrderQueueEvent);
+		
+		
 	}
 
 }

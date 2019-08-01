@@ -22,17 +22,9 @@ void OrderQueueThread() {
 			SentInfo temp(pc);
 			
 			UserVecLock.ReadLock();
-			UserListLock.ReadLock();
 			for (int j = 0; j < UserVec.size(); j++) {
 				User * targetuser = &UserList[UserVec[j]];
-				if (pc.Type == PACKET_TYPE::MYLOGIN) {
-					if (UserVec[j] != pc.UserID) {
-						temp.BufRef[0] = (char)(PACKET_TYPE::OTHERLOGIN);
-					}
-					else {
-						temp.BufRef[0] = (char)(PACKET_TYPE::MYLOGIN);
-					}
-				}
+				
 				if (targetuser->ClientSocket.WaitingQueue.empty()) {
 					targetuser->ClientSocket.WaitingQueue.Push(temp);
 					Sender* PerIoData = new Sender();
@@ -43,7 +35,6 @@ void OrderQueueThread() {
 					targetuser->ClientSocket.WaitingQueue.Push(temp);
 				}
 			}
-			UserListLock.ReadUnLock();
 			UserVecLock.ReadUnLock();
 		}
 	}
