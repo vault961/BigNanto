@@ -16,15 +16,14 @@ public:
 	APlayerManager();
 
 	// 플레이어들 정보를 담는 배열
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = PlayerManager)
-	TArray<class APlayerCharacter*> Players;
-	
-	// 워리어 블루프린트
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = PlayerManager)
-	TSubclassOf<class APlayerCharacter> Warrior;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TArray<class APlayerCharacter*> PlayerArray;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class APlayerCharacter* MyCharacter;
 
 	// 총 플레이어 수
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = PlayerManager)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	uint8 TotalPlayers;
 
 	UFUNCTION()

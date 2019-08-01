@@ -24,13 +24,6 @@ void UBigNantoGameInstance::Init()
 {
 	UE_LOG(LogTemp, Log, TEXT("GameInstance Initiate"));
 
-	FIPv4Endpoint RemoteAddressForConnection;
-	const FString& YourChosenSocketName = "df";
-	//uint8 IP4Nums[4];
-	int32 ThePort = 27015;
-	const int32 ReceiveBufferSize = 2 * 1024;
-	int32 NewSize = 0;
-
 	// 틱 돌아가기 시작
 	TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UBigNantoGameInstance::Tick));
 
@@ -43,32 +36,34 @@ void UBigNantoGameInstance::Init()
 
 	TSharedRef<FInternetAddr> RemoteAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	FIPv4Address address;
-	//FString IP = "172.18.33.156";			// 서버 아이피
-	FString IP = "172.18.33.158";
+	//FString IP = "172.18.33.156";			// 서버 아이피 (박진서)
+	FString IP = "172.18.33.158";			// 서버 아이피 (서영균)
 	FIPv4Address::Parse(IP, address);
 	RemoteAddress->SetIp(address.Value);
 	RemoteAddress->SetPort(27015);			// 서버 포트
 
-	if (ConnectionSocket->Connect(*RemoteAddress)) {
+	if (ConnectionSocket->Connect(*RemoteAddress)) 
+	{
 		UE_LOG(LogTemp, Warning, TEXT("Connection done."));
-		//GetWorldTimerManager().SetTimer(SendMessTimerHandle, this, &ATCP::SendMessage, 2.f, false);
-		//return ;
 	}
-	else {
+	else 
+	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Waiting for the server...")));
 		return;
 	}
 
-	char name[NAMELEN+1] = "yeap";
-	char kind = 0;
-	char initbuf[NAMELEN+1];
-	initbuf[0] = kind;
+	// 캐릭터 클래스, Y좌표, Z좌표, 데미지 퍼센트, 이름 정보를 담는 버퍼
+	char Buff[NAMELEN+1];
+	char CharacterName[NAMELEN+1] = "yeap";
+	char CharacterClass = 0;
+	Buff[0] = CharacterClass;
 
-	memcpy(initbuf + 1, name, NAMELEN);
-	
-	FTransform SpawnTransform(GetRandomPointInVolume());
+	memcpy(Buff, CharacterName, NAMELEN);
+	memcpy(Buff + 1 + strlen(CharacterName), position, sizeof(position));
 
-	SendMessage(PACKET_TYPE::MYLOGIN, initbuf, NAMELEN);
+	//FTransform SpawnTransform(GetRandomPointInVolume());
+	//FVector SpawnLocation =
+	SendMessage(PACKET_TYPE::MYLOGIN, Buff, NAMELEN);
 }
 
 bool UBigNantoGameInstance::Tick(float DeltaTime)
@@ -140,8 +135,8 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 Bo
 	return;
 }
 void UBigNantoGameInstance::CreateName(uint8 * dest, uint8 * source, uint32 size) {
-	memcpy(name, packet.body + 1, packet.len - 15);
-	name[packet.len - 15] = '\0';
+	memcpy(CharacterName, packet.body + 1, packet.len - 15);
+	CharacterName[packet.len - 15] = '\0';
 }
 
 void UBigNantoGameInstance::PacketProcess(Packet& packet) 
@@ -149,13 +144,19 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	switch (packet.type) {
 	case PACKET_TYPE::OTHERLOGIN:
 	{
-		APlayerCharacter* OtherCha = PlayerList[packet.userID];
+		APlayerCharacter* OtherCharacter = PlayerList[packet.userID];
 
-		OtherCha = CharacterSpawner->SpawnCharacter(packet.body[0], *(float*)(packet.body+sizeof(char)),
-			*(float*)(packet.body+sizeof(char)+sizeof(float)), *(wchar_t*)(packet.body+sizeof(float)*2+sizeof(char)),
-			false);
+		OtherCharacter = CharacterSpawner->SpawnCharacter(
+			packet.body[0], 
+			*(float*)(packet.body+sizeof(char)),
+			*(float*)(packet.body+sizeof(char)+sizeof(float)), 
+			*(wchar_t*)(packet.body+sizeof(float)*2+sizeof(char)),
+			false
+		);
 
-		CreateName(OtherCha->Name, packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t),
+		CreateName(
+			OtherCharacter->Name, 
+			packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t),
 			packet.len - sizeof(float) * 2 - sizeof(char) - sizeof(wchar_t) - FRONTLEN - TIMESTAMPLEN);
 
 		CurrentUserNum++;
@@ -164,9 +165,13 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::MYLOGIN:
 	{
-		APlayerCharacter* MyCharacter = CharacterSpawner->SpawnCharacter(packet.body[0], *(float*)(packet.body + sizeof(char)),
-			*(float*)(packet.body + sizeof(char) + sizeof(float)), *(wchar_t*)(packet.body + sizeof(float) * 2 + sizeof(char)),
-			true);
+		APlayerCharacter* MyCharacter = CharacterSpawner->SpawnCharacter(
+			packet.body[0], 
+			*(float*)(packet.body + sizeof(char)),
+			*(float*)(packet.body + sizeof(char) + sizeof(float)), 
+			*(wchar_t*)(packet.body + sizeof(float) * 2 + sizeof(char)),
+			true
+		);
 
 		PlayerList[packet.userID] = MyCharacter;
 		memcpy(MyCharacter->Name, packet.body + 1, packet.len - 15);
