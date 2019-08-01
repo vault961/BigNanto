@@ -52,16 +52,16 @@ void UBigNantoGameInstance::Init()
 		return;
 	}
 
-
-	char empty[1];
-	SendMessage(PACKET_TYPE::ENTER, empty, 1);
-
-
+	// 게임 입장 패킷 전송
+	//char empty[1] = "";
+	//SendMessage(PACKET_TYPE::ENTER, "", 1);
 }
 
 bool UBigNantoGameInstance::Tick(float DeltaTime)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("GameInstance Ticking........."));
+	if (!MyID)
+		return false;
+
 	PacketHandler();
 	return true;
 }
@@ -107,9 +107,6 @@ void UBigNantoGameInstance::PacketHandler()
 
 void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t BodySize)
 {
-	//FString serialized = "I am the message from UE4.";
-	//TCHAR* serializedChar = serialized.GetCharArray().GetData();
-	//int32 size = FCString::Strlen(serializedChar) + 4;
 	uint32 size = (uint32)BodySize + 6;
 	int32 sent = 0;
 
@@ -121,8 +118,8 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t B
 
 	bool successful = ConnectionSocket->Send((uint8*)BUF, size, sent);
 
-	if (successful) {
-		//UE_LOG(LogTemp, Warning, TEXT("Message Sent."));
+	if (!successful) {
+		UE_LOG(LogTemp, Error, TEXT("Message can't send!!!!!!!!"));
 	}
 
 	return;
@@ -133,29 +130,29 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	switch (packet.type) {
 	case PACKET_TYPE::ENTER:
 	{
-
-		// get idx
-		MyIdx = packet.body[0];
-		
-		// send class, y, z, damage, name to server TYPE LOGIN
-		
-		//SendMessage(PACKET_TYPE::LOGIN,     ,     );
+		// 내 ID 받기
+		MyID = packet.body[0];
+		FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
+		// send class, y, z, damage, name to server TYPE PLAYERSPAWN
+		// 서버에게 내 캐릭터 요청
+		//SendMessage(PACKET_TYPE::PLAYERSPAWN,     ,     );  ////////////////// WORK IN PROGRESS
 
 		break;
 	}
-	case PACKET_TYPE::LOGIN:
+	case PACKET_TYPE::PLAYERSPAWN:
 	{
-
-		char characterClass = packet.body[0];
+		char CharacterClass = packet.body[0];
 		float PosY = *(float*)(packet.body + sizeof(char));
 		float PosZ = *(float*)(packet.body + sizeof(char) + sizeof(float));
-		int Dmg = *(wchar_t*)(packet.body + sizeof(float) * 2 + sizeof(char));
-		uint8 * Name = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
+		int DamagePercent = *(wchar_t*)(packet.body + sizeof(float) * 2 + sizeof(char));
+		uint8* Name = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
 		int NameLen = packet.len - sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t) - FRONTLEN - TIMESTAMPLEN;
 
-		if (packet.userID == MyIdx) {
-			MyCharacter = CharacterSpawner->SpawnCharacter(characterClass, PosY, PosZ, Dmg,
-				true);
+		// 패킷 ID와 내 ID 비교
+		// 내 캐릭터 스폰
+		if (packet.userID == MyID) 
+		{
+			MyCharacter = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent,true);
 			PlayerList[packet.userID] = MyCharacter;
 			memcpy(MyCharacter->Name, Name, NameLen);
 			MyCharacter->Name[NameLen] = '\0';
@@ -168,8 +165,10 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			CurrentUserNum++;
 			UE_LOG(LogTemp, Warning, TEXT("myuser login"));
 		}
-		else {
-			APlayerCharacter* OtherCha = CharacterSpawner->SpawnCharacter(characterClass, PosY, PosZ, Dmg,
+		// 다른 캐릭터들 스폰
+		else 
+		{
+			APlayerCharacter* OtherCha = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent,
 				false);
 			PlayerList[packet.userID] = OtherCha;
 			memcpy(OtherCha->Name, Name, NameLen);

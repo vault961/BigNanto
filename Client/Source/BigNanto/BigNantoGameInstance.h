@@ -16,7 +16,7 @@
 
 enum class PACKET_TYPE {
 	ENTER,
-	LOGIN,
+	PLAYERSPAWN,
 	UPDATEDATA,
 };
 
@@ -64,21 +64,19 @@ public:
 	uint32 CurrentUserNum;
 	uint32 sumLen;
 	uint32 Len;
-	char MyIdx;
+	char MyID;
 
 	UPROPERTY(EditAnywhere)
 	class ACharacterSpawner* CharacterSpawner;
-	/*UPROPERTY(EditAnywhere)
-	class ACharacterSpawner* SpawnActor2;*/
-
+	
 	//class PlayerManager* PlayerManager;
+
 	class APlayerCharacter* PlayerList[100];
 	class APlayerCharacter* MyCharacter;
 	class APlayerController* PlayerController;
 	FVector NewPosition;
 
 	void PacketHandler();
-	//bool FormatIP4ToNumber(FString& TheIP, uint8(&Out)[4]);
 	void SendMessage(PACKET_TYPE Type, char * Body, wchar_t size);
 	void PacketProcess(Packet& packet);
 };

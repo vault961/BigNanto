@@ -129,7 +129,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 		if (SendDelay == 3) {
 			memcpy(body, &PlayerLocation.Y, sizeof(PlayerLocation.Y));
 			memcpy(body + 4, &PlayerLocation.Z, sizeof(PlayerLocation.Z));
-			GameInstance->SendMessage(PACKET_TYPE::UPDATEPOS, body, 8);
+			GameInstance->SendMessage(PACKET_TYPE::UPDATEDATA, body, 8);
 			SendDelay = 0;
 		}
 	}
