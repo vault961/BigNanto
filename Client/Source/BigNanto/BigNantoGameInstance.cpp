@@ -135,9 +135,6 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 si
 
 void UBigNantoGameInstance::PacketProcess(Packet& packet) 
 {
-	if (!GetWorld())
-		return;
-
 	switch (packet.type) {
 	case PACKET_TYPE::OTHERLOGIN:
 	{
