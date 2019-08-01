@@ -8,6 +8,7 @@
 
 #define BUFLEN 512
 #define MAX_PACKET_SIZE 3000
+#define NAMELEN 20
 
 enum class PACKET_TYPE {
 	OTHERLOGIN,
@@ -77,4 +78,5 @@ public:
 	//bool FormatIP4ToNumber(FString& TheIP, uint8(&Out)[4]);
 	void SendMessage(PACKET_TYPE Type, char * Body, uint32 size);
 	void PacketProcess(Packet& packet);
+	void CreateName(uint8 * dest, uint8 * source, uint32 size);
 };

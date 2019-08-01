@@ -33,7 +33,6 @@ void OrderQueueThread() {
 						temp.BufRef[0] = (char)(PACKET_TYPE::MYLOGIN);
 					}
 				}
-
 				if (targetuser->ClientSocket.WaitingQueue.empty()) {
 					targetuser->ClientSocket.WaitingQueue.Push(temp);
 					Sender* PerIoData = new Sender();
@@ -130,7 +129,7 @@ int main(void) {
 		RemoteLen = sizeof(saRemote);
 		Accept = accept(ListenSocket, (SOCKADDR*)&saRemote, &RemoteLen);
 
-		if (UserVec.size() + 1 > WSA_MAXIMUM_WAIT_EVENTS) {
+		if (UserVec.size() >= WSA_MAXIMUM_WAIT_EVENTS) {
 			printf("too many connections");
 			closesocket(Accept);
 			break;

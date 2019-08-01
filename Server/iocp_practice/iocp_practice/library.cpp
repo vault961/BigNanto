@@ -5,7 +5,6 @@
 OrderQueue<Packet> g_OrderQueue;
 User UserList[MAX_USER];
 WSAEVENT OrderQueueEvent;
-char bufTable[100][MAX_PACKET_SIZE];
 std::vector<int> UserVec;
 RWLock UserVecLock;
 RWLock UserListLock;
@@ -84,7 +83,15 @@ void User::GetOthersInfo() {
 			fromuser = &UserList[UserVec[j]];
 			int namelen = strlen(fromuser->Name);
 			if (namelen > 0) {
-				Packet temppacket(PACKET_TYPE::OTHERLOGIN, namelen + 6, UserVec[j], fromuser->Name);
+				char buf[50];
+				
+				memcpy(buf, &fromuser->Kind, sizeof(char));
+				memcpy(buf + sizeof(char), &fromuser->PosY, sizeof(float));
+				memcpy(buf + sizeof(char) + sizeof(float), &fromuser->PosZ, sizeof(float));
+				memcpy(buf + sizeof(char) + sizeof(float)*2, &fromuser->Damage, sizeof(wchar_t));
+				memcpy(buf + sizeof(char) + sizeof(float)*2 + sizeof(wchar_t), fromuser->Name, namelen);
+
+				Packet temppacket(PACKET_TYPE::OTHERLOGIN, namelen + FRONTLEN + sizeof(float)*2 + sizeof(wchar_t), UserVec[j], fromuser->Name);
 				SentInfo temp(temppacket);
 
 				if (ClientSocket.WaitingQueue.empty()) {
@@ -112,15 +119,18 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	memcpy(receiveBuffer + receivedSize, source, retValue);
 	receivedSize += retValue;
 
-	unsigned int len = *(unsigned int*)(receiveBuffer + 2);
+	unsigned int len = *(unsigned int*)(receiveBuffer + TYPELEN + USERLEN);
 	printf("%d recieve\n", len);
 
 	if (receivedSize >= len) {
-		Packet temppacket((PACKET_TYPE)*receiveBuffer, len, myuser.Idx, receiveBuffer + 6);
+		Packet temppacket((PACKET_TYPE)*receiveBuffer, len, myuser.Idx, receiveBuffer + FRONTLEN);
+		myuser.PosY = *(float*)(temppacket.Body);
+		myuser.PosZ = *(float*)(temppacket.Body + sizeof(float));
+		myuser.Damage = *(wchar_t*)(temppacket.Body + sizeof(float) * 2);
 
 		// if user hasn't name, put name
 		if (temppacket.Type == PACKET_TYPE::MYLOGIN) {
-			CreateAccount(&temppacket, myuser.Name, myuser.ClientSocket.ReceiveBuffer + 6, len - 6);
+			CreateAccount(&temppacket, myuser.Name, myuser.ClientSocket.ReceiveBuffer + FRONTLEN, len - FRONTLEN);
 			printf("username :%s ", myuser.Name);
 		}
 		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize-len); // buf ´ç±â±â
