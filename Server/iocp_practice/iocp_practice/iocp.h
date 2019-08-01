@@ -20,6 +20,11 @@
 #define ORDER 3
 #define SEND_POSTED 4
 
+#define TYPELEN 1
+#define USERLEN 1
+#define LENLEN 4
+#define FRONTLEN 6
+
 enum class PACKET_TYPE {
 	OTHERLOGIN,
 	MYLOGIN,
@@ -44,7 +49,7 @@ public:
 		Type = myType;
 		UserID = myIdx;
 		Len = myLen + TIMESTAMPLEN;
-		memcpy(Body + 6, myBody, myLen - 6);
+		memcpy(Body + FRONTLEN, myBody, myLen - FRONTLEN);
 		time(&Timestamp);
 	}
 };
@@ -108,10 +113,10 @@ public:
 
 	}
 	SentInfo(Packet& source) {
-		memcpy(source.Body, &source.Type, 1);
-		memcpy(source.Body + 1, &source.UserID, 1);
-		memcpy(source.Body + 2, &source.Len, 4);
-		memcpy(source.Body + source.Len - 8, &source.Timestamp, 8);
+		memcpy(source.Body, &source.Type, TYPELEN);
+		memcpy(source.Body + TYPELEN, &source.UserID, USERLEN);
+		memcpy(source.Body + TYPELEN + USERLEN, &source.Len, LENLEN);
+		memcpy(source.Body + source.Len - TIMESTAMPLEN, &source.Timestamp, TIMESTAMPLEN);
 
 		BufRef = source.Body;
 		Sended = 0;
@@ -131,7 +136,7 @@ typedef struct {
 
 class Worker : public OVERLAPPED
 {
-public:
+protected:
 	Worker() {
 		Internal = 0;
 		InternalHigh = 0;
@@ -140,10 +145,8 @@ public:
 		Offset = 0;
 		Pointer = 0;
 	}
-
-	virtual void Work(SOCKET Socket, int idx, DWORD bytes)
-	{
-	};
+public:
+	virtual void Work(SOCKET Socket, int idx, DWORD bytes) = 0;
 
 };
 
@@ -167,6 +170,11 @@ typedef struct {
 	BOOL Connection;
 	bool Sending;
 	char Name[30];
+	wchar_t Damage;
+	float PosY;
+	float PosZ;
+	char Kind;
+
 	void SendFront(Sender* overlapped);
 	void GetOthersInfo();
 	RWLock wqueue;

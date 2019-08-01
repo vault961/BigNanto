@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "PlayerCharacter.generated.h"
+#define NAMELEN 20
 
 // 캐릭터 상태
 UENUM()
@@ -94,6 +95,8 @@ public:
 	int32 SendDelay;
 	char body[100];
 	bool IsMine;
+	char Name[NAMELEN];
+
 	FVector NewLocation;
 	FVector PlayerLocation;
 	FVector destination;

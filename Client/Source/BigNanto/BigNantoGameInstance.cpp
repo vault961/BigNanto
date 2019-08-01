@@ -72,8 +72,16 @@ void UBigNantoGameInstance::Init()
 	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerController::StaticClass(), FoundActors);
 	//PlayerController = Cast<APlayerController>(FoundActors[0]);
 
-	char name[5] = "yeap";
-	SendMessage(PACKET_TYPE::MYLOGIN, name, 10);
+	char name[NAMELEN+1] = "yeap";
+	char kind = 0;
+	char initbuf[NAMELEN+1];
+	initbuf[0] = kind;
+
+	memcpy(initbuf + 1, name, NAMELEN);
+	
+	FTransform SpawnTransform(GetRandomPointInVolume());
+
+	SendMessage(PACKET_TYPE::MYLOGIN, initbuf, NAMELEN);
 }
 
 bool UBigNantoGameInstance::Tick(float DeltaTime)
@@ -95,16 +103,13 @@ void UBigNantoGameInstance::PacketHandler()
 	if (ConnectionSocket->HasPendingData(Size)) {
 		ReadBytes = 0;
 		ConnectionSocket->Recv(ReadData, BUFLEN, ReadBytes, ESocketReceiveFlags::None);
-
 		if (ReadBytes == 0) // error
 			return;
-
 		if (BufArraySize + ReadBytes < MAX_PACKET_SIZE) {
 			memcpy(BufArray + BufArraySize, ReadData, ReadBytes);
 			BufArraySize += ReadBytes;
 		}
 	}
-
 	// 배열 이동을 최소화하기위해 쌓인버퍼 모두 처리후 배열이동.
 	sumLen = 0;
 	while (BufArraySize > 0) {
@@ -125,17 +130,19 @@ void UBigNantoGameInstance::PacketHandler()
 	}
 }
 
-void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 size)
+void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 BodySize)
 {
 	//FString serialized = "I am the message from UE4.";
 	//TCHAR* serializedChar = serialized.GetCharArray().GetData();
 	//int32 size = FCString::Strlen(serializedChar) + 4;
+	uint32 size = BodySize + 6;
 	int32 sent = 0;
+
 	char BUF[BUFLEN];
 
 	memcpy(BUF, &Type, 1);
 	memcpy(BUF + 2, &size, 4);
-	memcpy(BUF + 6, Body, size - 6);
+	memcpy(BUF + 6, Body, BodySize);
 
 	bool successful = ConnectionSocket->Send((uint8*)BUF, size, sent);
 
@@ -144,6 +151,10 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 si
 	}
 
 	return;
+}
+void UBigNantoGameInstance::CreateName(uint8 * dest, uint8 * source, uint32 size) {
+	memcpy(name, packet.body + 1, packet.len - 15);
+	name[packet.len - 15] = '\0';
 }
 
 void UBigNantoGameInstance::PacketProcess(Packet& packet) 
@@ -154,15 +165,29 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	switch (packet.type) {
 	case PACKET_TYPE::OTHERLOGIN:
 	{
-		PlayerList[packet.userID] = CharacterSpawner->SpawnCharacter(1, false);
+		APlayerCharacter* OtherCha = PlayerList[packet.userID];
+
+		OtherCha = CharacterSpawner->SpawnCharacter(packet.body[0], *(float*)(packet.body+sizeof(char)),
+			*(float*)(packet.body+sizeof(char)+sizeof(float)), *(wchar_t*)(packet.body+sizeof(float)*2+sizeof(char)),
+			false);
+
+		CreateName(OtherCha->Name, packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t),
+			packet.len - sizeof(float) * 2 - sizeof(char) - sizeof(wchar_t) - FRONTLEN - TIMESTAMPLEN);
+
 		CurrentUserNum++;
 		UE_LOG(LogTemp, Warning, TEXT("other user login"));
 		break;
 	}
 	case PACKET_TYPE::MYLOGIN:
 	{
-		APlayerCharacter* MyCharacter = CharacterSpawner->SpawnCharacter(2, true);
+		APlayerCharacter* MyCharacter = CharacterSpawner->SpawnCharacter(packet.body[0], *(float*)(packet.body + sizeof(char)),
+			*(float*)(packet.body + sizeof(char) + sizeof(float)), *(wchar_t*)(packet.body + sizeof(float) * 2 + sizeof(char)),
+			true);
+
 		PlayerList[packet.userID] = MyCharacter;
+		memcpy(MyCharacter->Name, packet.body + 1, packet.len - 15);
+		MyCharacter->Name[packet.len - 15] = '\0';
+
 
 		if (nullptr == PlayerController)
 			PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);

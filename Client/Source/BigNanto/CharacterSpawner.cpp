@@ -65,13 +65,14 @@ FVector ACharacterSpawner::GetRandomPointInVolume()
 	return RandomLocation;
 }
 
-APlayerCharacter* ACharacterSpawner::SpawnCharacter(int CharacterNum, bool bIsMine)
+APlayerCharacter* ACharacterSpawner::SpawnCharacter(char CharacterNum, float PosY, float PosZ, int Damage, bool bIsMine)
 {
 	// 월드 체크
 	UWorld* const World = GetWorld();
 	if (World)
 	{
 		FTransform SpawnTransform(GetRandomPointInVolume());
+		
 		APlayerCharacter* Character;
 
 		switch (CharacterNum)
