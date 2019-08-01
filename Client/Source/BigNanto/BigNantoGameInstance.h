@@ -9,12 +9,15 @@
 #define BUFLEN 512
 #define MAX_PACKET_SIZE 3000
 #define NAMELEN 20
+#define USERLEN 1
+#define TYPELEN 1
+#define FRONTLEN 4
+#define TIMESTAMPLEN 8
 
 enum class PACKET_TYPE {
-	OTHERLOGIN,
-	MYLOGIN,
-	UPDATEPOS,
-	UPDATESTATUS,
+	ENTER,
+	LOGIN,
+	UPDATEDATA,
 };
 
 class Packet {
@@ -61,6 +64,7 @@ public:
 	uint32 CurrentUserNum;
 	uint32 sumLen;
 	uint32 Len;
+	char MyIdx;
 
 	UPROPERTY(EditAnywhere)
 	class ACharacterSpawner* CharacterSpawner;
@@ -69,14 +73,12 @@ public:
 
 	//class PlayerManager* PlayerManager;
 	class APlayerCharacter* PlayerList[100];
-	//class APlayerCharacter* MyPlayer;
-	//class APlayerCharacter* MyActor;
+	class APlayerCharacter* MyCharacter;
 	class APlayerController* PlayerController;
 	FVector NewPosition;
 
 	void PacketHandler();
 	//bool FormatIP4ToNumber(FString& TheIP, uint8(&Out)[4]);
-	void SendMessage(PACKET_TYPE Type, char * Body, uint32 size);
+	void SendMessage(PACKET_TYPE Type, char * Body, wchar_t size);
 	void PacketProcess(Packet& packet);
-	void CreateName(uint8 * dest, uint8 * source, uint32 size);
 };

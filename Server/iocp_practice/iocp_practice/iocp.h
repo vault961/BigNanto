@@ -22,12 +22,12 @@
 
 #define TYPELEN 1
 #define USERLEN 1
-#define LENLEN 4
-#define FRONTLEN 6
+#define LENLEN 2
+#define FRONTLEN TYPELEN+USERLEN+LENLEN
 
 enum class PACKET_TYPE {
-	OTHERLOGIN,
-	MYLOGIN,
+	ENTER,
+	LOGIN,
 	UPDATEPOS,
 	UPDATESTATUS,
 };
@@ -42,10 +42,10 @@ class Packet{
 public:
 	PACKET_TYPE Type;
 	char UserID;
-	unsigned int Len;
+	wchar_t Len;
 	time_t Timestamp;
 	char Body[MAX_PACKET_SIZE];
-	Packet(PACKET_TYPE myType, unsigned int myLen, int myIdx, char * myBody) {
+	Packet(PACKET_TYPE myType, wchar_t myLen, int myIdx, char * myBody) {
 		Type = myType;
 		UserID = myIdx;
 		Len = myLen + TIMESTAMPLEN;
@@ -170,7 +170,8 @@ typedef struct {
 	BOOL Connection;
 	bool Sending;
 	char Name[30];
-	wchar_t Damage;
+	char Class;
+	int Damage;
 	float PosY;
 	float PosZ;
 	char Kind;
