@@ -40,6 +40,7 @@
 *.xcodeproj
 *.xcworkspace
 #*.sln ¾ê´Â ³²°ÜµÖ¾ßÇÞ
+Client/*.sln
 *.suo
 *.opensdf
 *.sdf
