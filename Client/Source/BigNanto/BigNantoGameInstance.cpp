@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "BigNantoGameInstance.h"
@@ -18,52 +18,24 @@ UBigNantoGameInstance::UBigNantoGameInstance()
 	BufArraySize = 0;
 	CurrentUserNum = 0;
 	sumLen = 0;
+	bIsConnected = false;
 }
 
 void UBigNantoGameInstance::Init()
 {
 	UE_LOG(LogTemp, Log, TEXT("GameInstance Initiate"));
 
-	// Æ½ µ¹¾Æ°¡±â ½ÃÀÛ
+	// í‹± ëŒì•„ê°€ê¸° ì‹œìž‘
 	TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UBigNantoGameInstance::Tick));
-
-	ConnectionSocket = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateSocket(NAME_Stream, TEXT("TCP"), false);
-	UE_LOG(LogTemp, Log, TEXT("socket start"));
-	if (!ConnectionSocket) {
-		UE_LOG(LogTemp, Error, TEXT("Cannot create socket."));
-		return;
-	}
-
-	TSharedRef<FInternetAddr> RemoteAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
-	FIPv4Address address;
-	//FString IP = "172.18.33.156";			// ¼­¹ö ¾ÆÀÌÇÇ (¹ÚÁø¼­)
-	FString IP = "172.18.33.158";			// ¼­¹ö ¾ÆÀÌÇÇ (¼­¿µ±Õ)
-	FIPv4Address::Parse(IP, address);
-	RemoteAddress->SetIp(address.Value);
-	RemoteAddress->SetPort(27015);			// ¼­¹ö Æ÷Æ®
-
-	if (ConnectionSocket->Connect(*RemoteAddress)) 
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Connection done."));
-	}
-	else 
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Waiting for the server...")));
-		return;
-	}
-
-
-	char empty[1];
-	SendMessage(PACKET_TYPE::ENTER, empty, 1);
-
-
+	//EnterGame("ìž‰", 1 , "ì´ìž‰", 3);
 }
 
 bool UBigNantoGameInstance::Tick(float DeltaTime)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("GameInstance Ticking........."));
+	if (false == bIsConnected)
+		return false;
+
 	PacketHandler();
-	AllUserTransformUpdate();
 	return true;
 }
 
@@ -71,7 +43,28 @@ void UBigNantoGameInstance::Shutdown()
 {
 	UE_LOG(LogTemp, Log, TEXT("GameInstance Shutdown..........."));
 	FTicker::GetCoreTicker().RemoveTicker(TickDelegateHandle);
-	ConnectionSocket->Close();
+	if(nullptr != ConnectionSocket)
+		ConnectionSocket->Close();
+}
+
+void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t BodySize)
+{
+	uint32 size = (uint32)BodySize + FRONTLEN;
+	int32 sent = 0;
+
+	char BUF[BUFLEN];
+
+	memcpy(BUF, &Type, 1);
+	memcpy(BUF + TYPELEN + USERLEN, &size, 2);
+	memcpy(BUF + FRONTLEN, Body, BodySize);
+
+	bool successful = ConnectionSocket->Send((uint8*)BUF, size, sent);
+
+	if (!successful) {
+		UE_LOG(LogTemp, Error, TEXT("Message can't send!!!!!!!!"));
+	}
+
+	return;
 }
 
 void UBigNantoGameInstance::PacketHandler()
@@ -86,7 +79,7 @@ void UBigNantoGameInstance::PacketHandler()
 			BufArraySize += ReadBytes;
 		}
 	}
-	// ¹è¿­ ÀÌµ¿À» ÃÖ¼ÒÈ­ÇÏ±âÀ§ÇØ ½×ÀÎ¹öÆÛ ¸ðµÎ Ã³¸®ÈÄ ¹è¿­ÀÌµ¿.
+	// ë°°ì—´ ì´ë™ì„ ìµœì†Œí™”í•˜ê¸°ìœ„í•´ ìŒ“ì¸ë²„í¼ ëª¨ë‘ ì²˜ë¦¬í›„ ë°°ì—´ì´ë™.
 	sumLen = 0;
 	while (BufArraySize > 0) {
 		targetArray = BufArray + sumLen;
@@ -109,6 +102,7 @@ void UBigNantoGameInstance::PacketHandler()
 		BufArray[BufArraySize + i] = BufArray[i];
 	}
 }
+
 
 void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t BodySize)
 {
@@ -143,36 +137,39 @@ int MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char 
 	return namelen + 11;
 }
 
+
 void UBigNantoGameInstance::PacketProcess(Packet& packet) 
 {
 	switch (packet.type) {
 	case PACKET_TYPE::ENTER:
 	{
 
-		// get idx
-		MyIdx = packet.body[0];
-		
-		// send class, y, z, damage, name to server TYPE LOGIN
-		char source[100];
-		// source, CharacterClass, Y, Z, damage, name, length of name)
-		int size = MakeLoginBuf(source, );
-		SendMessage(PACKET_TYPE::LOGIN, source, size);
+		// ë‚´ ID ë°›ê¸°
+		MyID = packet.body[0];
+		FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
+		// send class, y, z, damage, name to server TYPE PLAYERSPAWN
+		// ì„œë²„ì—ê²Œ ë‚´ ìºë¦­í„° ìš”ì²­
+		//SendMessage(PACKET_TYPE::PLAYERSPAWN,     ,     );  ////////////////// WORK IN PROGRESS
+
 
 		break;
 	}
-	case PACKET_TYPE::LOGIN:
+	case PACKET_TYPE::PLAYERSPAWN:
 	{
-
-		char characterClass = packet.body[0];
+		char CharacterClass = packet.body[0];
 		float PosY = *(float*)(packet.body + sizeof(char));
 		float PosZ = *(float*)(packet.body + sizeof(char) + sizeof(float));
-		int Dmg = *(wchar_t*)(packet.body + sizeof(float) * 2 + sizeof(char));
-		uint8 * Name = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
-		int NameLen = packet.len - sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t) - FRONTLEN ;
 
-		if (packet.userID == MyIdx) {
-			MyCharacter = CharacterSpawner->SpawnCharacter(characterClass, PosY, PosZ, Dmg,
-				true);
+		int DamagePercent = *(wchar_t*)(packet.body + sizeof(float) * 2 + sizeof(char));
+		uint8* Name = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
+		int NameLen = packet.len - sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t) - FRONTLEN;
+
+
+		// íŒ¨í‚· IDì™€ ë‚´ ID ë¹„êµ
+		// ë‚´ ìºë¦­í„° ìŠ¤í°
+		if (packet.userID == MyID) 
+		{
+			MyCharacter = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent,true);
 			PlayerList[packet.userID] = MyCharacter;
 			memcpy(MyCharacter->Name, Name, NameLen);
 			MyCharacter->Name[NameLen] = '\0';
@@ -185,9 +182,12 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			CurrentUserNum++;
 			UE_LOG(LogTemp, Warning, TEXT("myuser login"));
 		}
-		else {
-			APlayerCharacter* OtherCha = CharacterSpawner->SpawnCharacter(characterClass, PosY, PosZ, Dmg,
+		// ë‹¤ë¥¸ ìºë¦­í„°ë“¤ ìŠ¤í°
+		else 
+		{
+			APlayerCharacter* OtherCha = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent,
 				false);
+			float movespeed = OtherCha->GetVelocity().Size();
 			PlayerList[packet.userID] = OtherCha;
 			memcpy(OtherCha->Name, Name, NameLen);
 			OtherCha->Name[NameLen] = '\0';
@@ -213,7 +213,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::UPDATESTATE:
 	{
-		if (packet.userID != MyIdx) {
+		if (packet.userID != MyID) {
 			APlayerCharacter* User = PlayerList[packet.userID];
 			switch (packet.body[0]) {
 			case (char)ECharacterAction::EA_Attack:
@@ -239,4 +239,50 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		break;
 	}
 	}
+}
+
+void UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort, FString UserName, uint8 ClassType)
+{
+	ConnectionSocket = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateSocket(NAME_Stream, TEXT("TCP"), false);
+	UE_LOG(LogTemp, Log, TEXT("socket start"));
+	if (!ConnectionSocket) {
+		UE_LOG(LogTemp, Error, TEXT("Cannot create socket."));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("ServerIP = %s"), *ServerIP);
+	UE_LOG(LogTemp, Log, TEXT("ServerPort = %d"), ServerPort);
+	UE_LOG(LogTemp, Log, TEXT("UserName = %s"), *UserName);
+	UE_LOG(LogTemp, Log, TEXT("ClassType = %d"), ClassType);
+	
+	//CharacterSpawner->SpawnCharacter(ClassType, 1, 1, 0, 1);
+
+	TSharedRef<FInternetAddr> RemoteAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
+	FIPv4Address address;
+	//FString IP = "172.18.33.156";			// ì„œë²„ ì•„ì´í”¼ (ë°•ì§„ì„œ)
+	//FString IP = "172.18.33.158";			// ì„œë²„ ì•„ì´í”¼ (ì„œì˜ê· )
+	//FIPv4Address::Parse(IP, address);
+	FIPv4Address::Parse(ServerIP, address);
+	RemoteAddress->SetIp(address.Value);
+	//RemoteAddress->SetPort(27015);			// ì„œë²„ í¬íŠ¸
+	RemoteAddress->SetPort(ServerPort);
+	
+	UE_LOG(LogTemp, Log, TEXT("íìœ¼ìœ¼ìœ¼ìœ¼ìœ¼ìœ¼ìœ¼ìŒ"));
+
+	if (ConnectionSocket->Connect(*RemoteAddress))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Connection done."));
+		bIsConnected = true;
+		return;
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Red, FString::Printf(TEXT("Connection Failed")));
+		bIsConnected = false;
+		return;
+	}
+
+	// ê²Œìž„ ìž…ìž¥ íŒ¨í‚· ì „ì†¡
+	//char empty[20] = "";
+	//SendMessage(PACKET_TYPE::ENTER, "", 1);
 }

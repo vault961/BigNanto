@@ -25,7 +25,7 @@ void APlayerManager::AddPlayers()
 
 		if (PlayerCharacter)
 		{
-			Players.Add(PlayerCharacter);
+			//Players.Add(PlayerCharacter);
 			++TotalPlayers;
 			UE_LOG(LogTemp, Log, TEXT("'%s' in the house"), *PlayerCharacter->GetName());
 		}

@@ -71,8 +71,8 @@ APlayerCharacter* ACharacterSpawner::SpawnCharacter(char CharacterNum, float Pos
 	UWorld* const World = GetWorld();
 	if (World)
 	{
-		//FTransform SpawnTransform(GetRandomPointInVolume());
-		
+		FVector SpawnVector(0.f, PosY, PosZ);
+		FTransform SpawnTransform(SpawnVector);
 		APlayerCharacter* Character;
 
 		switch (CharacterNum)

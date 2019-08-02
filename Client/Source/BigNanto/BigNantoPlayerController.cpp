@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "BigNantoPlayerController.h"
@@ -7,5 +7,8 @@
 
 void ABigNantoPlayerController::BeginPlay()
 {
-	//Cast<UBigNantoGameInstance>(GetGameInstance())->PlayerController = this;
+	Super::BeginPlay();
+	SetInputMode(FInputModeUIOnly());
+	bShowMouseCursor = true;
+	UE_LOG(LogTemp, Log, TEXT("내가 돌아왔다"));
 }

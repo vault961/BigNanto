@@ -138,10 +138,10 @@ void APlayerCharacter::Tick(float DeltaTime)
 		// 내 위치 송신
 		SendDelay += 1;
 		if (SendDelay == 3) {
-			memcpy(body, &PlayerLocation.Y, 4);
-			memcpy(body + 4, &PlayerLocation.Z, 4);
-			memcpy(body + 8, &PlayerYaw, 4);
-			GameInstance->SendMessage(PACKET_TYPE::UPDATETRANSFORM, body, 12);
+
+			memcpy(body, &PlayerLocation.Y, sizeof(PlayerLocation.Y));
+			memcpy(body + 4, &PlayerLocation.Z, sizeof(PlayerLocation.Z));
+			GameInstance->SendMessage(PACKET_TYPE::UPDATEDATA, body, 8);
 			SendDelay = 0;
 		}
 	}
@@ -222,7 +222,6 @@ void APlayerCharacter::BeginOverlap(UPrimitiveComponent * OverlappedComponent, A
 			{
 				AbilityHit(OverlappedAbility);
 			}
-
 		}
 	}
 }
@@ -272,6 +271,7 @@ void APlayerCharacter::MoveRight(float val)
 		// 입력받은 방향으로 이동
 		AddMovementInput(FVector(0.f, -1.f, 0.f), val);
 	}
+	
 }
 
 void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)

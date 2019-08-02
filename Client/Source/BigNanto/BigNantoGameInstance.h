@@ -15,7 +15,7 @@
 
 enum class PACKET_TYPE {
 	ENTER,
-	LOGIN,
+	PLAYERSPAWN,
 	UPDATETRANSFORM,
 	UPDATEDMG,
 	UPDATESTATE,
@@ -51,6 +51,7 @@ public:
 	virtual bool Tick(float DeltaTime);
 	virtual void Shutdown() override;
 
+	// Tick 델리게이트
 	FDelegateHandle TickDelegateHandle;
 
 	class FSocket* ConnectionSocket;
@@ -58,28 +59,32 @@ public:
 	uint8 * targetArray;
 	uint32 BufArraySize;
 
+	bool bIsConnected;
+
 	uint8 ReadData[BUFLEN];
 	uint32 Size;
 	int32 ReadBytes;
 	uint32 CurrentUserNum;
 	uint32 sumLen;
 	uint32 Len;
-	char MyIdx;
+	char MyID;
 
 	UPROPERTY(EditAnywhere)
 	class ACharacterSpawner* CharacterSpawner;
-	/*UPROPERTY(EditAnywhere)
-	class ACharacterSpawner* SpawnActor2;*/
-
-	//class PlayerManager* PlayerManager;
+	
 	class APlayerCharacter* PlayerList[100];
 	class APlayerCharacter* MyCharacter;
 	class APlayerController* PlayerController;
 	FVector NewPosition;
 
-
-	void PacketHandler();
-	//bool FormatIP4ToNumber(FString& TheIP, uint8(&Out)[4]);
+	// 패킷 전송 함수
 	void SendMessage(PACKET_TYPE Type, char * Body, wchar_t size);
+	// 들어온 패킷 분석
+	void PacketHandler();
+	// 들어온 패킷 처리
 	void PacketProcess(Packet& packet);
+
+	// 플레이어 입장
+	UFUNCTION(BlueprintCallable)
+	void EnterGame(FString ServerIP, int32 ServerPort, FString UserName, uint8 ClassType);
 };
