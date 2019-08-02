@@ -35,8 +35,8 @@ public:
 		userID = myId;
 		len = myLen;
 
-		memcpy(body, myBody, len - 12);
-		body[len - 12] = 0;
+		memcpy(body, myBody, len - FRONTLEN);
+		body[len - FRONTLEN] = 0;
 	}
 };
 
@@ -58,8 +58,6 @@ public:
 	uint8 BufArray[10000];
 	uint8 * targetArray;
 	uint32 BufArraySize;
-
-	bool bIsConnected;
 
 	uint8 ReadData[BUFLEN];
 	uint32 Size;
@@ -83,6 +81,8 @@ public:
 	void PacketHandler();
 	// 들어온 패킷 처리
 	void PacketProcess(Packet& packet);
+
+	// 로그인 버퍼 생성 함수
 	int MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char * name, int namelen);
 	// 플레이어 입장
 	UFUNCTION(BlueprintCallable)
