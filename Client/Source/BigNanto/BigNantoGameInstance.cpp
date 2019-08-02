@@ -151,7 +151,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		// 서버에게 내 캐릭터 요청
 		//SendMessage(PACKET_TYPE::PLAYERSPAWN,     ,     );  ////////////////// WORK IN PROGRESS
 
-
 		break;
 	}
 	case PACKET_TYPE::PLAYERSPAWN:
