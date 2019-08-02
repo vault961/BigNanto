@@ -12,19 +12,19 @@
 #define USERLEN 1
 #define TYPELEN 1
 #define FRONTLEN 4
-#define TIMESTAMPLEN 8
 
 enum class PACKET_TYPE {
 	ENTER,
 	LOGIN,
-	UPDATEDATA,
+	UPDATETRANSFORM,
+	UPDATEDMG,
+	UPDATESTATE,
 };
 
 class Packet {
 public:
 	PACKET_TYPE type;
 	char userID;
-	time_t timestamp;
 	uint8 body[MAX_PACKET_SIZE];
 
 	uint32 remain;
@@ -33,8 +33,8 @@ public:
 	Packet(PACKET_TYPE myType, uint8 myId, uint8* myBody, uint32 myLen) {
 		type = myType;
 		userID = myId;
-		//	timestamp = myTimeStamp;
 		len = myLen;
+
 		memcpy(body, myBody, len - 12);
 		body[len - 12] = 0;
 	}
@@ -76,6 +76,7 @@ public:
 	class APlayerCharacter* MyCharacter;
 	class APlayerController* PlayerController;
 	FVector NewPosition;
+
 
 	void PacketHandler();
 	//bool FormatIP4ToNumber(FString& TheIP, uint8(&Out)[4]);

@@ -95,6 +95,7 @@ void APlayerCharacter::BeginPlay()
 	
 	//SetActorTickInterval(0.2f);
 	PlayerLocation = GetActorLocation();
+
 	//NewLocation.Y = PlayerLocation.Y;
 	//NewLocation.Z = PlayerLocation.Z;
 	SendDelay = 0;
@@ -112,24 +113,35 @@ void APlayerCharacter::Tick(float DeltaTime)
 	}
 
 	PlayerLocation = GetActorLocation();
-
+	
 	// 보정
 	// 플레이어 아니면
 	if (!IsMine)
 	{
-		destination = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
-		//destination = NewLocation;
+		UpdatedLocation = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
+		
+		FRotator NewRotation;
+		if (UpdatedLocation.Y > PlayerLocation.Y) {
+			NewRotation = FRotator(0, 1, 0);
+		}
+		else {
+			NewRotation = FRotator(0, -1, 0);
+		}
 
-		SetActorLocation(destination, false);
+		FQuat QuatRotation = FQuat(NewRotation);
+		AddActorLocalRotation(QuatRotation, false, 0, ETeleportType::None);
+		//destination = NewLocation;
+		SetActorLocation(UpdatedLocation, false);
 
 	}
 	else {
 		// 내 위치 송신
 		SendDelay += 1;
 		if (SendDelay == 3) {
-			memcpy(body, &PlayerLocation.Y, sizeof(PlayerLocation.Y));
-			memcpy(body + 4, &PlayerLocation.Z, sizeof(PlayerLocation.Z));
-			GameInstance->SendMessage(PACKET_TYPE::UPDATEPOS, body, 8);
+			memcpy(body, &PlayerLocation.Y, 4);
+			memcpy(body + 4, &PlayerLocation.Z, 4);
+			memcpy(body + 8, &PlayerYaw, 4);
+			GameInstance->SendMessage(PACKET_TYPE::UPDATETRANSFORM, body, 12);
 			SendDelay = 0;
 		}
 	}
@@ -177,7 +189,7 @@ void APlayerCharacter::SetCurrentState(ECharacterState NewState)
 	CurrentState = NewState;
 }
 
-void APlayerCharacter::UpdatePosition(FVector New)
+void APlayerCharacter::UpdateLocation(FVector New)
 {
 	NewLocation = New;
 	UE_LOG(LogTemp, Warning, TEXT("update position %f %f"), New.Y, New.Z);
@@ -217,23 +229,36 @@ void APlayerCharacter::BeginOverlap(UPrimitiveComponent * OverlappedComponent, A
 
 void APlayerCharacter::DoJump()
 {
-	if (CurrentState != ECharacterState::EIdle && CurrentState != ECharacterState::EJump)
-		return;
-
-	// 땅에 닿으면 점프 카운트 초기화
-	// 애님 노티파이에서도 초기화 해주긴 하는데 혹시 몰라서
-	if (GetCharacterMovement()->IsMovingOnGround() == true)
+	if (IsMine)
 	{
-		JumpCount = 0;
-	}
+		if (CurrentState != ECharacterState::EIdle && CurrentState != ECharacterState::EJump)
+			return;
 
-	// 점프 카운트 2미만일시 점프 가능(최대 2단 점프)
-	if (JumpCount < 2)
+		// 나 일경우, defenthit 애니메이션 전송
+		anibody[0] = (char)ECharacterAction::EA_Jump;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, body, 1);
+
+		// 땅에 닿으면 점프 카운트 초기화
+		// 애님 노티파이에서도 초기화 해주긴 하는데 혹시 몰라서
+		if (GetCharacterMovement()->IsMovingOnGround() == true)
+		{
+			JumpCount = 0;
+		}
+
+		// 점프 카운트 2미만일시 점프 가능(최대 2단 점프)
+		if (JumpCount < 2)
+		{
+			SetCurrentState(ECharacterState::EJump);
+			LaunchCharacter(FVector(0.f, 0.f, 1.f) * GetCharacterMovement()->JumpZVelocity, false, true);
+			JumpCount++;
+		}
+	}
+	else
 	{
 		SetCurrentState(ECharacterState::EJump);
-		LaunchCharacter(FVector(0.f, 0.f, 1.f) * GetCharacterMovement()->JumpZVelocity, false, true);
-		JumpCount++;
+			LaunchCharacter(FVector(0.f, 0.f, 1.f) * GetCharacterMovement()->JumpZVelocity, false, true);
 	}
+	
 }
 
 void APlayerCharacter::MoveRight(float val)
@@ -264,6 +289,13 @@ void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 		// 적이 내 앞에 있고 방어 중 일시 (방패 히트 애니메이션)
 		if ((HitDot < 0 ) && CurrentState == ECharacterState::EDefend)
 		{
+			// 나 일경우, defenthit 애니메이션 전송
+			if (IsMine)
+			{
+				anibody[0] = (char)ECharacterAction::EA_DefendHit;
+				GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, body, 1);
+			}
+
 			AnimInstance->PlayDefendHit();
 		}
 		// 적이 내 뒤에 있거나 방어 중이 아닐시 (일반 히트 애니메이션)
@@ -282,23 +314,44 @@ void APlayerCharacter::AbilityHit(AWeapon_MagicWand * OverlappedAbility)
 
 void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 {
+	// 나 일경우 Hit 애니메이션 전송, hit damage 처리
+	if (IsMine)
+	{
+		anibody[0] = (char)ECharacterAction::EA_Hit;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, body, 1);
+
+		// 데미지 퍼센트에 히트 데미지 추가
+		DamagePercent += HitDamage;
+		// 공격 받은 방향으로 넉백
+		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
+
+	}
+
+
 	// 현재행동 중단하고 EHit 상태로 바꿔주기
 	StopAttack();
 	StopSpecialAbility();
 	SetCurrentState(ECharacterState::EHit);
-
-	// 데미지 퍼센트에 히트 데미지 추가
-	DamagePercent += HitDamage;
-	// 공격 받은 방향으로 넉백
-	LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
 	AnimInstance->PlayGetHit();
+	
+
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorTransform());
 }
-
+UPlayerCharacterAnim* APlayerCharacter::GetAnimInstance() {
+	
+	return AnimInstance;
+}
 void APlayerCharacter::Attack()
 {
-	if (CurrentState != ECharacterState::EIdle)
-		return;
+	// 나일경우 attack 애니메이션 전송
+	if (IsMine)
+	{
+		if (CurrentState != ECharacterState::EIdle)
+			return;
+
+		anibody[0] = (char)ECharacterAction::EA_Attack;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, body, 1);
+	}
 
 	if (AnimInstance)
 	{
@@ -310,6 +363,13 @@ void APlayerCharacter::Attack()
 
 void APlayerCharacter::StopAttack()
 {
+	// 나 일경우 stopattack 신호 보냄.
+	if (IsMine)
+	{
+		anibody[0] = (char)ECharacterAction::EA_StopAttack;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, body, 1);
+	}
+
 	if (AnimInstance)
 	{
 		AnimInstance->bIsAttacking = false;

@@ -3,83 +3,61 @@
 #include <memory>
 
 OrderQueue<Packet> g_OrderQueue;
-User UserList[MAX_USER];
 WSAEVENT OrderQueueEvent;
-std::vector<int> UserVec;
-RWLock UserVecLock;
-RWLock UserListLock;
+RWLock UserMapLock;
 SOCKET ListenSocket;
 HANDLE CompletionPort;
+std::map<char, User*> UserMap;
+using namespace std;
 
 int AddSocket(int Socket) {
-	int idx;
-	UserVecLock.WriteLock();
-	for (int i = 1; i < MAX_USER; i++) {
-		if (UserList[i].Connection == FALSE) {
-			UserList[i].Connection = TRUE;
-			UserVec.push_back(i);
-			idx = i;
-			break;
-		}
-	}
-	printf("add socket idx : %d\n", idx);
-	User * myuser = &UserList[idx];
-	myuser->Idx = idx;
-	myuser->ClientSocket.Socket = Socket;
-	myuser->Name[0] = NULL;
-
-	UserVecLock.WriteUnLock();
-
+	UserMapLock.WriteLock();
+	hash<int> h;
+	char idx = h(Socket);
+	printf("socket : %c connected\n", idx);
+	UserMap.insert(std::make_pair(idx, new User(idx, Socket)));
+	UserMapLock.WriteUnLock();
 	return idx;
 }
 
-User& GetUser(int idx) {
-	UserListLock.ReadLock();
-	User& myuser = UserList[idx];
-	UserListLock.ReadUnLock();
+User& GetUser(char idx) {
+	UserMapLock.ReadLock();
+	//User& myuser = UserList[idx];
+	User& myuser = *(UserMap.find(idx)->second);
+	UserMapLock.ReadUnLock();
 	return myuser;
 }
 
-void CompressArrays(int idx) {
-	printf("delete idx : %d\n", idx);
-	UserVecLock.WriteLock();
-	UserList[idx].Connection = FALSE;
-	for (int k = 0; k < UserVec.size(); k++) {
-		if (UserVec[k] == idx) {
-			UserVec.erase(UserVec.begin() + k);
-			break;
-		}
-	}
-	UserVecLock.WriteUnLock();
+void CompressArrays(char idx) {
+	printf("delete idx : %c\n", idx);
+	UserMapLock.WriteLock();
+	delete UserMap.find(idx)->second;
+	UserMap.erase(idx);
+	UserMapLock.WriteUnLock();
 }
-
 void Compress(char *source, int len) {
-	// len 만큼 당기지말고
-	// 전체에서 len 뺀 대상에대해 줄여야됨.
-	for (int k = 0; k < len; k++)  // buf 당기기
+	for (int k = 0; k < len; k++) 
 		source[k + len] = source[k];
 }
 
-
-
 void User::GetOthersInfo() {
 	User* fromuser;
-	int idx = Idx;
-	UserVecLock.ReadLock();
-	for (int j = 0; j < UserVec.size(); j++) {
-		if (UserVec[j] != idx) {
-			fromuser = &UserList[UserVec[j]];
+	char idx = Idx;
+	UserMapLock.ReadLock();
+	for (auto it = UserMap.begin();it != UserMap.end(); it++) {
+		if (it->first != idx) {
+			fromuser = it->second;
 			int namelen = strlen(fromuser->Name);
 			if (namelen > 0) {
 				char buf[50];
 				
-				memcpy(buf, &fromuser->Kind, sizeof(char));
+				memcpy(buf, &fromuser->CharacterClass, sizeof(char));
 				memcpy(buf + sizeof(char), &fromuser->PosY, sizeof(float));
 				memcpy(buf + sizeof(char) + sizeof(float), &fromuser->PosZ, sizeof(float));
 				memcpy(buf + sizeof(char) + sizeof(float)*2, &fromuser->Damage, sizeof(wchar_t));
 				memcpy(buf + sizeof(char) + sizeof(float)*2 + sizeof(wchar_t), fromuser->Name, namelen);
 
-				Packet temppacket(PACKET_TYPE::LOGIN, namelen + FRONTLEN + sizeof(float)*2 + sizeof(wchar_t), UserVec[j], fromuser->Name);
+				Packet temppacket(PACKET_TYPE::PLAYERSPAWN, namelen + FRONTLEN + sizeof(float)*2 + sizeof(wchar_t), it->first, fromuser->Name);
 				SentInfo temp(temppacket);
 
 				if (ClientSocket.WaitingQueue.empty()) {
@@ -94,15 +72,13 @@ void User::GetOthersInfo() {
 			}
 		}
 	}
-	UserVecLock.ReadUnLock();
+	UserMapLock.ReadUnLock();
 }
 
 void RecvProcess(char * source, int retValue, User& myuser) {
-
 	char * receiveBuffer = myuser.ClientSocket.ReceiveBuffer;
 	int& receivedSize = myuser.ClientSocket.ReceivedBufferSize;
 	
-
 	memcpy(receiveBuffer + receivedSize, source, retValue);
 	receivedSize += retValue;
 
@@ -118,8 +94,8 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		myuser.ClientSocket.ReceivedBufferSize -= len;  // buf resize
 
 		// if user hasn't name, put name
-		if (temppacket.Type == PACKET_TYPE::LOGIN) {
-			myuser.Class = *temppacket.Body;
+		if (temppacket.Type == PACKET_TYPE::PLAYERSPAWN) {
+			myuser.CharacterClass = *temppacket.Body;
 			myuser.PosY = *(float*)(temppacket.Body + 1);
 			myuser.PosZ = *(float*)(temppacket.Body + sizeof(float) + 1);
 			myuser.Damage = *(wchar_t*)(temppacket.Body + sizeof(float) * 2 + 1);
@@ -140,14 +116,15 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		// broadcast
 		g_OrderQueue.Push(temppacket);
 		SetEvent(OrderQueueEvent);
-		
-		
 	}
 
 }
-void Recver::Work(SOCKET Socket, int idx, DWORD bytes) {
+void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
+	SOCKET Socket = PerHandleData->Socket;
+	char idx = PerHandleData->idx;
 	DWORD Flags;
 	WSABUF wbuf;
+
 
 	User& myuser = GetUser(idx);
 	RecvProcess(Buffer, bytes, myuser);
@@ -173,7 +150,9 @@ void User::SendFront(Sender* overlapped) {
 	WSASend(ClientSocket.Socket, &wBuf, 1, NULL, 0, overlapped, NULL);
 }
 
-void Sender::Work(SOCKET Socket, int idx, DWORD bytes) {
+void Sender::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
+	SOCKET Socket = PerHandleData->Socket;
+	char idx = PerHandleData->idx;
 	User& myuser = GetUser(idx);
 	WSABUF wBuf;
 	sendinfo.Sended += bytes;
@@ -189,3 +168,5 @@ void Sender::Work(SOCKET Socket, int idx, DWORD bytes) {
 		WSASend(myuser.ClientSocket.Socket, &wBuf, 1, NULL, 0, this, NULL);
 	}
 }
+
+

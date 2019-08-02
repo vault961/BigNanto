@@ -5,14 +5,11 @@
 #include <process.h>
 
 extern OrderQueue<Packet> g_OrderQueue;
-extern User UserList[MAX_USER];
 extern WSAEVENT OrderQueueEvent;
-extern std::vector<int> UserVec;
-extern RWLock UserVecLock;
-extern RWLock UserListLock;
+extern RWLock UserMapLock;
 extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
-
+extern std::map<char, User*> UserMap;
 
 void OrderQueueThread() {
 	while (1) {
@@ -21,9 +18,14 @@ void OrderQueueThread() {
 			Packet pc(g_OrderQueue.Pop());
 			SentInfo temp(pc);
 			
-			UserVecLock.ReadLock();
-			for (int j = 0; j < UserVec.size(); j++) {
-				User * targetuser = &UserList[UserVec[j]];
+			// UserVec.ReadLock();
+			// UserList.ReadLock();
+			// for (int i = 0;i < UserVec.size();i++) {
+			//  	fromuser = UserList[UserVec[i]];
+
+			UserMapLock.ReadLock();
+			for (auto it = UserMap.begin();it != UserMap.end(); it++) {
+				User * targetuser = it->second;
 				
 				if (targetuser->ClientSocket.WaitingQueue.empty()) {
 					targetuser->ClientSocket.WaitingQueue.Push(temp);
@@ -35,7 +37,7 @@ void OrderQueueThread() {
 					targetuser->ClientSocket.WaitingQueue.Push(temp);
 				}
 			}
-			UserVecLock.ReadUnLock();
+			UserMapLock.ReadUnLock();
 		}
 	}
 }
@@ -59,8 +61,8 @@ unsigned int __stdcall ServerWorkerThread(LPVOID CompletionPortID) {
 			delete (Worker*)RecvData;
 			continue;
 		}
-
-		((Worker*)RecvData)->Work(PerHandleData->Socket, PerHandleData->idx, BytesTransferred);
+		((Worker*)RecvData)->Work(PerHandleData, BytesTransferred);
+		
 	}
 	return 0;
 }
@@ -116,18 +118,16 @@ int main(void) {
 
 
 	while (1) {
-
 		RemoteLen = sizeof(saRemote);
 		Accept = accept(ListenSocket, (SOCKADDR*)&saRemote, &RemoteLen);
 
-		if (UserVec.size() >= WSA_MAXIMUM_WAIT_EVENTS) {
+		if (UserMap.size() >= WSA_MAXIMUM_WAIT_EVENTS) {
 			printf("too many connections");
 			closesocket(Accept);
 			break;
 		}
-		printf("socket : %d connected\n", Accept);
 
-		int myidx = AddSocket(Accept);
+		char myidx = AddSocket(Accept);
 
 		PerHandleData = (LPPER_HANDLE_DATA)malloc(sizeof(PER_HANDLE_DATA));
 		PerHandleData->Socket = Accept;
@@ -136,7 +136,7 @@ int main(void) {
 
 		CreateIoCompletionPort((HANDLE)Accept, CompletionPort, (DWORD)PerHandleData, 0);
 
-		UserList[myidx].GetOthersInfo();
+		(UserMap.find(myidx)->second)->GetOthersInfo();
 
 		PerIoData = new Recver();
 		flags = 0;

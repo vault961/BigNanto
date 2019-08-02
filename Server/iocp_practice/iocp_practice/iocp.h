@@ -6,14 +6,15 @@
 #include <string.h>
 #include <time.h>
 #include <queue>
+#include <map>
+#include <functional>
 #pragma comment (lib, "Ws2_32.lib")
 
 
 #define MAX_BUFFER_SIZE 512
-#define MAX_PACKET_SIZE 3000
-#define MAX_SOCKET_BUFFER_SIZE 3000
+#define MAX_PACKET_SIZE 512
+#define MAX_SOCKET_BUFFER_SIZE 10000
 #define MAX_USER 10
-#define TIMESTAMPLEN 8
 
 #define RECV_POSTED 1
 #define SENDER 2
@@ -23,17 +24,16 @@
 #define TYPELEN 1
 #define USERLEN 1
 #define LENLEN 2
-#define FRONTLEN TYPELEN+USERLEN+LENLEN
+#define FRONTLEN 4
 
 enum class PACKET_TYPE {
 	ENTER,
-	LOGIN,
-	UPDATEPOS,
-	UPDATESTATUS,
+	PLAYERSPAWN,
+	UPDATEDATA,
 };
 typedef struct _PER_HANDLE_DATA {
 	SOCKET Socket;
-	int idx;
+	char idx;
 	SOCKADDR_IN ClientAddr;
 } PER_HANDLE_DATA, *LPPER_HANDLE_DATA;
 
@@ -43,14 +43,12 @@ public:
 	PACKET_TYPE Type;
 	char UserID;
 	wchar_t Len;
-	time_t Timestamp;
 	char Body[MAX_PACKET_SIZE];
-	Packet(PACKET_TYPE myType, wchar_t myLen, int myIdx, char * myBody) {
+	Packet(PACKET_TYPE myType, wchar_t myLen, char myIdx, char * myBody) {
 		Type = myType;
 		UserID = myIdx;
-		Len = myLen + TIMESTAMPLEN;
+		Len = myLen;
 		memcpy(Body + FRONTLEN, myBody, myLen - FRONTLEN);
-		time(&Timestamp);
 	}
 };
 
@@ -59,7 +57,9 @@ public:
 class RWLock
 {
 public:
-	RWLock() {};
+	RWLock() {
+		mLockFlag = 0;
+	};
 	~RWLock() {};
 
 	RWLock(const RWLock& rhs) = delete;
@@ -116,7 +116,6 @@ public:
 		memcpy(source.Body, &source.Type, TYPELEN);
 		memcpy(source.Body + TYPELEN, &source.UserID, USERLEN);
 		memcpy(source.Body + TYPELEN + USERLEN, &source.Len, LENLEN);
-		memcpy(source.Body + source.Len - TIMESTAMPLEN, &source.Timestamp, TIMESTAMPLEN);
 
 		BufRef = source.Body;
 		Sended = 0;
@@ -146,57 +145,60 @@ protected:
 		Pointer = 0;
 	}
 public:
-	virtual void Work(SOCKET Socket, int idx, DWORD bytes) = 0;
-
+	virtual void Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) = 0;
 };
 
 class Sender : public Worker
 {
 public:
-	virtual void Work(SOCKET Socket, int idx, DWORD bytes);
+	virtual void Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes);
 	SentInfo sendinfo;
 };
 class Recver : public Worker
 {
 public:
-	virtual void Work(SOCKET Socket, int idx, DWORD bytes);
+	virtual void Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes);
 	char Buffer[MAX_BUFFER_SIZE]{ 0 };
 	int BufferLen{ 0 };
 };
 
-typedef struct {
-	int Idx;
+
+
+class User {
+public:
+	User(char idx, int socket) {
+		Idx = idx;
+		ClientSocket.Socket = socket;
+		CharacterClass = 0;
+		PosY = 0;
+		PosZ = 0;
+		Damage = 0;
+		ClientSocket.ReceivedBufferSize = 0;
+	}
+	char Idx;
 	ClientSocket ClientSocket;
-	BOOL Connection;
-	bool Sending;
 	char Name[30];
-	char Class;
+	char CharacterClass;
 	int Damage;
 	float PosY;
 	float PosZ;
-	char Kind;
-
+	
 	void SendFront(Sender* overlapped);
 	void GetOthersInfo();
 	RWLock wqueue;
-} User;
+};
 
 
 extern OrderQueue<Packet> g_OrderQueue;
-extern User UserList[MAX_USER];
-extern WSAEVENT OrderQueueEvent;
-extern std::vector<int> UserVec;
-extern RWLock UserVecLock;
-extern RWLock UserListLock;
+extern RWLock UserMapLock;
 extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
+extern std::map<char, User*> UserMap;
 
-
-User& GetUser(int idx);
-void CompressArrays(int i);
+User& GetUser(char idx);
+void CompressArrays(char i);
 int AddSocket(int Socket);
 void Compress(char *source, int len);
-void CreateAccount(Packet *temppacket, char* name, char* buf, int len);
 void RecvProcess(char * source, int retValue, User& myuser);
 void OrderQueueThread();
 

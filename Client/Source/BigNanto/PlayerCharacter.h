@@ -17,7 +17,22 @@ enum class ECharacterState : uint8
 	EDefend,		// 방어
 	EHit,			// 맞는 중
 	EChanneling,	// 집중 중
+	EStopAttack,
+	EDefendHit,
 };
+
+// 액션
+UENUM()
+enum class ECharacterAction : uint8
+{
+	EA_DefendHit,
+	EA_StopAttack,
+	EA_Attack,
+	EA_Defend,
+	EA_Hit,
+	EA_Jump,
+};
+
 
 // 캐릭터 직업
 UENUM()
@@ -91,16 +106,22 @@ public:
 
 	class UBigNantoGameInstance* GameInstance;
 	int32 SendDelay;
-	char body[100];
+	char body[50];
+	char anibody[50];
 	bool IsMine;
 	char Name[NAMELEN];
 
 	FVector NewLocation;
+	float NewYaw;
+
 	FVector PlayerLocation;
-	FVector destination;
-	
+	float PlayerYaw;
+
+	FVector UpdatedLocation;
+	FRotator UpdatedRotation;
+
 	UFUNCTION()
-	void UpdatePosition(FVector New);
+	void UpdateLocation(FVector New);
 	UFUNCTION()
 	void UpdateStatus();
 
@@ -142,4 +163,7 @@ public:
 	virtual void SpecialAbility();
 	UFUNCTION()
 	virtual void StopSpecialAbility();
+
+	UFUNCTION()
+	UPlayerCharacterAnim* APlayerCharacter::GetAnimInstance();
 };

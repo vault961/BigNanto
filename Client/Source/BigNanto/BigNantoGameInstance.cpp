@@ -63,6 +63,7 @@ bool UBigNantoGameInstance::Tick(float DeltaTime)
 {
 	//UE_LOG(LogTemp, Warning, TEXT("GameInstance Ticking........."));
 	PacketHandler();
+	AllUserTransformUpdate();
 	return true;
 }
 
@@ -89,6 +90,10 @@ void UBigNantoGameInstance::PacketHandler()
 	sumLen = 0;
 	while (BufArraySize > 0) {
 		targetArray = BufArray + sumLen;
+
+		if (BufArraySize < FRONTLEN)
+			break;
+
 		Len = *(wchar_t*)(targetArray + 2);
 		if (BufArraySize >= Len) {
 			Packet packet((PACKET_TYPE)(*targetArray), *(targetArray + 1), targetArray + 6, Len);
@@ -127,6 +132,16 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t B
 
 	return;
 }
+//return packet body size
+int MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char * name, int namelen) {
+	memcpy(source, &cls, 1);
+	memcpy(source + 1, &Y, 4);
+	memcpy(source + 5, &Z, 4);
+	memcpy(source + 9, &damage, 2);
+	memcpy(source + 11, name, namelen);
+
+	return namelen + 11;
+}
 
 void UBigNantoGameInstance::PacketProcess(Packet& packet) 
 {
@@ -138,8 +153,10 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		MyIdx = packet.body[0];
 		
 		// send class, y, z, damage, name to server TYPE LOGIN
-		
-		//SendMessage(PACKET_TYPE::LOGIN,     ,     );
+		char source[100];
+		// source, CharacterClass, Y, Z, damage, name, length of name)
+		int size = MakeLoginBuf(source, );
+		SendMessage(PACKET_TYPE::LOGIN, source, size);
 
 		break;
 	}
@@ -151,7 +168,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		float PosZ = *(float*)(packet.body + sizeof(char) + sizeof(float));
 		int Dmg = *(wchar_t*)(packet.body + sizeof(float) * 2 + sizeof(char));
 		uint8 * Name = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
-		int NameLen = packet.len - sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t) - FRONTLEN - TIMESTAMPLEN;
+		int NameLen = packet.len - sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t) - FRONTLEN ;
 
 		if (packet.userID == MyIdx) {
 			MyCharacter = CharacterSpawner->SpawnCharacter(characterClass, PosY, PosZ, Dmg,
@@ -180,14 +197,45 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		}
 		break;
 	}
-	case PACKET_TYPE::UPDATEDATA:
+	case PACKET_TYPE::UPDATETRANSFORM:
 	{
 		APlayerCharacter* User = PlayerList[packet.userID];
 		NewPosition.Y = *(float*)packet.body;
 		NewPosition.Z = *(float*)(packet.body + 4);
+		User->UpdateLocation(NewPosition);
+		break;
+	}
+	case PACKET_TYPE::UPDATEDMG:
+	{
+		APlayerCharacter* User = PlayerList[packet.userID];
 		User->DamagePercent = *(wchar_t*)(packet.body + 8);
-		//UE_LOG(LogTemp, Warning, TEXT("%d user : "), packet.userID);
-		User->UpdatePosition(NewPosition);
+		break;
+	}
+	case PACKET_TYPE::UPDATESTATE:
+	{
+		if (packet.userID != MyIdx) {
+			APlayerCharacter* User = PlayerList[packet.userID];
+			switch (packet.body[0]) {
+			case (char)ECharacterAction::EA_Attack:
+				User->Attack();
+				break;
+			case (char)ECharacterAction::EA_Defend:
+				User->DoJump();
+				break;
+			case (char)ECharacterAction::EA_DefendHit:
+				User->GetAnimInstance->PlayDefendHit();
+				break;
+			case (char)ECharacterAction::EA_Hit:
+				FVector none;
+				User->HitandKnockback(none, 0);
+				break;
+			case (char)ECharacterAction::EA_Jump:
+				break;
+			case (char)ECharacterAction::EA_StopAttack:
+				User->StopAttack();
+				break;
+			}
+		}
 		break;
 	}
 	}
