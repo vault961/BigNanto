@@ -164,6 +164,4 @@ public:
 	UFUNCTION()
 	virtual void StopSpecialAbility();
 
-	UFUNCTION()
-	UPlayerCharacterAnim* APlayerCharacter::GetAnimInstance();
 };

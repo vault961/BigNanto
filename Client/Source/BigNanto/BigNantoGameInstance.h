@@ -16,7 +16,7 @@
 enum class PACKET_TYPE {
 	ENTER,
 	PLAYERSPAWN,
-	UPDATETRANSFORM,
+	UPDATELOCATION,
 	UPDATEDMG,
 	UPDATESTATE,
 };
@@ -83,7 +83,7 @@ public:
 	void PacketHandler();
 	// 들어온 패킷 처리
 	void PacketProcess(Packet& packet);
-
+	int MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char * name, int namelen);
 	// 플레이어 입장
 	UFUNCTION(BlueprintCallable)
 	void EnterGame(FString ServerIP, int32 ServerPort, FString UserName, uint8 ClassType);
