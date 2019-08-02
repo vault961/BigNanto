@@ -210,7 +210,6 @@ void APlayerCharacter::BeginOverlap(UPrimitiveComponent * OverlappedComponent, A
 			{
 				AbilityHit(OverlappedAbility);
 			}
-
 		}
 	}
 }
@@ -247,6 +246,7 @@ void APlayerCharacter::MoveRight(float val)
 		// 입력받은 방향으로 이동
 		AddMovementInput(FVector(0.f, -1.f, 0.f), val);
 	}
+	
 }
 
 void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)

@@ -51,12 +51,15 @@ public:
 	virtual bool Tick(float DeltaTime);
 	virtual void Shutdown() override;
 
+	// Tick 델리게이트
 	FDelegateHandle TickDelegateHandle;
 
 	class FSocket* ConnectionSocket;
 	uint8 BufArray[10000];
 	uint8 * targetArray;
 	uint32 BufArraySize;
+
+	bool bIsConnected;
 
 	uint8 ReadData[BUFLEN];
 	uint32 Size;
@@ -69,14 +72,19 @@ public:
 	UPROPERTY(EditAnywhere)
 	class ACharacterSpawner* CharacterSpawner;
 	
-	//class PlayerManager* PlayerManager;
-
 	class APlayerCharacter* PlayerList[100];
 	class APlayerCharacter* MyCharacter;
 	class APlayerController* PlayerController;
 	FVector NewPosition;
 
-	void PacketHandler();
+	// 패킷 전송 함수
 	void SendMessage(PACKET_TYPE Type, char * Body, wchar_t size);
+	// 들어온 패킷 분석
+	void PacketHandler();
+	// 들어온 패킷 처리
 	void PacketProcess(Packet& packet);
+
+	// 플레이어 입장
+	UFUNCTION(BlueprintCallable)
+	void EnterGame(FString ServerIP, int32 ServerPort, FString UserName, uint8 ClassType);
 };
