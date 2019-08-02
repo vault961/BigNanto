@@ -141,7 +141,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 
 			memcpy(body, &PlayerLocation.Y, sizeof(PlayerLocation.Y));
 			memcpy(body + 4, &PlayerLocation.Z, sizeof(PlayerLocation.Z));
-			GameInstance->SendMessage(PACKET_TYPE::UPDATEDATA, body, 8);
+			GameInstance->SendMessage(PACKET_TYPE::UPDATELOCATION, body, 8);
 			SendDelay = 0;
 		}
 	}
@@ -336,10 +336,6 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	
 
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorTransform());
-}
-UPlayerCharacterAnim* APlayerCharacter::GetAnimInstance() {
-	
-	return AnimInstance;
 }
 void APlayerCharacter::Attack()
 {

@@ -10,6 +10,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "CharacterSpawner.h"
 #include "UObject/ConstructorHelpers.h"
+#include "PlayerCharacterAnim.h"
 
 //#pragma comment (lib, "Ws2_32.lib")
 
@@ -58,12 +59,15 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t B
 	memcpy(BUF + TYPELEN + USERLEN, &size, 2);
 	memcpy(BUF + FRONTLEN, Body, BodySize);
 
-	bool successful = ConnectionSocket->Send((uint8*)BUF, size, sent);
+	do {
+		bool successful = ConnectionSocket->Send((uint8*)BUF, size, sent);
 
-	if (!successful) {
-		UE_LOG(LogTemp, Error, TEXT("Message can't send!!!!!!!!"));
-	}
+		if (!successful) {
+			UE_LOG(LogTemp, Error, TEXT("Message can't send!!!!!!!!"));
+		}
+		size -= sent;
 
+	} while (size > 0);
 	return;
 }
 
@@ -104,30 +108,8 @@ void UBigNantoGameInstance::PacketHandler()
 }
 
 
-void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t BodySize)
-{
-	//FString serialized = "I am the message from UE4.";
-	//TCHAR* serializedChar = serialized.GetCharArray().GetData();
-	//int32 size = FCString::Strlen(serializedChar) + 4;
-	uint32 size = (uint32)BodySize + 6;
-	int32 sent = 0;
-
-	char BUF[BUFLEN];
-
-	memcpy(BUF, &Type, 1);
-	memcpy(BUF + TYPELEN + USERLEN, &size, 2);
-	memcpy(BUF + FRONTLEN, Body, BodySize);
-
-	bool successful = ConnectionSocket->Send((uint8*)BUF, size, sent);
-
-	if (successful) {
-		//UE_LOG(LogTemp, Warning, TEXT("Message Sent."));
-	}
-
-	return;
-}
 //return packet body size
-int MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char * name, int namelen) {
+int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char * name, int namelen) {
 	memcpy(source, &cls, 1);
 	memcpy(source + 1, &Y, 4);
 	memcpy(source + 5, &Z, 4);
@@ -140,16 +122,21 @@ int MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char 
 
 void UBigNantoGameInstance::PacketProcess(Packet& packet) 
 {
+	FVector none;
+
 	switch (packet.type) {
 	case PACKET_TYPE::ENTER:
 	{
-
+		
 		// 내 ID 받기
 		MyID = packet.body[0];
 		FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
+
+		char buf[20];
+		int len = MakeLoginBuf(buf, 0, RandomLocation.Y, RandomLocation.Z, 0, "dsf", 3);
 		// send class, y, z, damage, name to server TYPE PLAYERSPAWN
 		// 서버에게 내 캐릭터 요청
-		//SendMessage(PACKET_TYPE::PLAYERSPAWN,     ,     );  ////////////////// WORK IN PROGRESS
+		SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);  ////////////////// WORK IN PROGRESS
 
 
 		break;
@@ -197,7 +184,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		}
 		break;
 	}
-	case PACKET_TYPE::UPDATETRANSFORM:
+	case PACKET_TYPE::UPDATELOCATION:
 	{
 		APlayerCharacter* User = PlayerList[packet.userID];
 		NewPosition.Y = *(float*)packet.body;
@@ -223,10 +210,10 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				User->DoJump();
 				break;
 			case (char)ECharacterAction::EA_DefendHit:
-				User->GetAnimInstance->PlayDefendHit();
+				User->AnimInstance->PlayDefendHit();
 				break;
 			case (char)ECharacterAction::EA_Hit:
-				FVector none;
+				
 				User->HitandKnockback(none, 0);
 				break;
 			case (char)ECharacterAction::EA_Jump:
