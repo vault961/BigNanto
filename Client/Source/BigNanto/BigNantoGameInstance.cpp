@@ -121,12 +121,10 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 
 		// 서버에게 내 캐릭터 요청
 		SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);  ////////////////// WORK IN PROGRESS
-		UE_LOG(LogTemp, Warning, TEXT("내 로그 받았음"));
 		break;
 	}
 	case PACKET_TYPE::PLAYERSPAWN:
 	{
-
 		char CharacterClass = packet.body[0];
 		float PosY = *(float*)(packet.body + sizeof(char));
 		float PosZ = *(float*)(packet.body + sizeof(char) + sizeof(float));
@@ -134,12 +132,11 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		uint8* CharacterName = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
 		int NameLen = packet.len - sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t) - FRONTLEN;
 
-		UE_LOG(LogTemp, Log, TEXT("%c"), MyID);
 		// 패킷 ID와 내 ID 비교
 		// 내 캐릭터 스폰
 		if (packet.userID == MyID) 
 		{
-			MyCharacter = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent,true);
+			MyCharacter = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
 			PlayerList[packet.userID] = MyCharacter;
 			memcpy(MyCharacter->Name, CharacterName, NameLen);
 			MyCharacter->Name[NameLen] = '\0';
@@ -147,14 +144,13 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			if (nullptr == PlayerController)
 				PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 			PlayerController->Possess(MyCharacter);
-
 			PlayerController->bShowMouseCursor = false;
 
 			CurrentUserNum++;
 			UE_LOG(LogTemp, Warning, TEXT("myuser login"));
 		}
 		// 다른 캐릭터들 스폰
-		/*else 
+		else 
 		{
 			APlayerCharacter* Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, false);
 			float movespeed = Character->GetVelocity().Size();
@@ -164,7 +160,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 
 			CurrentUserNum++;
 			UE_LOG(LogTemp, Warning, TEXT("other user login"));
-		}*/
+		}
 		break;
 	}
 	case PACKET_TYPE::UPDATELOCATION:

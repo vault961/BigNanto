@@ -114,8 +114,8 @@ void APlayerCharacter::Tick(float DeltaTime)
 
 	PlayerLocation = GetActorLocation();
 	
-	// 보정
-	// 플레이어 아니면
+	// 플레이어 위치 보정
+	// 내 캐릭터가 아니면
 	if (!IsMine)
 	{
 		UpdatedLocation = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
