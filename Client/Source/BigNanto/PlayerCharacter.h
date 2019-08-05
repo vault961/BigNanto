@@ -31,6 +31,7 @@ enum class ECharacterAction : uint8
 	EA_Defend,
 	EA_Hit,
 	EA_Jump,
+	EA_SpecialAbility,
 };
 
 
@@ -51,6 +52,7 @@ class BIGNANTO_API APlayerCharacter : public ACharacter
 public:	
 	// Sets default values for this character's properties
 	APlayerCharacter();
+	~APlayerCharacter();
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -110,6 +112,7 @@ public:
 	char anibody[50];
 	bool IsMine;
 	char Name[NAMELEN];
+	uint8 MyID;
 
 	FVector NewLocation;
 	float NewYaw;
@@ -164,4 +167,6 @@ public:
 	UFUNCTION()
 	virtual void StopSpecialAbility();
 
+	UFUNCTION(BlueprintCallable)
+	virtual void Die();
 };

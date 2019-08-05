@@ -10,7 +10,7 @@
 
 ABigNantoGameModeBase::ABigNantoGameModeBase()
 {
-	//DefaultPawnClass = AWizardCharacter::StaticClass();
+	DefaultPawnClass = AActor::StaticClass();
 	//GameStateClass = AInGameStateBase::StaticClass();
 	//HUDClass = AInGameHUD::StaticClass();
 	PlayerControllerClass = ABigNantoPlayerController::StaticClass();

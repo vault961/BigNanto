@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "PlayerCharacter.h"
@@ -17,72 +17,83 @@
 #include "Kismet/GameplayStatics.h"
 #include "Weapon_MagicWand.h"
 #include "BigNantoGameInstance.h"
+#include "CharacterSpawner.h"
+#include "CenterViewCamera.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// Ä¸½¶ ÄÄÆ÷³ÍÆ®
-	GetCapsuleComponent()->InitCapsuleSize(40.f, 90.f);													// Ä³¸¯ÅÍ Ä¸½¶ »çÀÌÁî
-	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::BeginOverlap);	// Ä³¸¯ÅÍ Ãæµ¹ ÇÔ¼ö À§ÀÓ
-	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;							// Ä³¸¯ÅÍ À§¿¡ ´©°¡ ¿Ã¶ó ¼³ ¼ö ÀÖ´ÂÁö
-	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));										// Ä³¸¯ÅÍ Ãæµ¹ Ã¤³Î = Pawn Å¸ÀÔ
-	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));											// Ä³¸¯ÅÍ ¸Å½¬ Ãæµ¹ Ã¤³Î = NoCollision
+	// ìº¡ìŠ ì»´í¬ë„ŒíŠ¸
+	GetCapsuleComponent()->InitCapsuleSize(40.f, 90.f);													// ìºë¦­í„° ìº¡ìŠ ì‚¬ì´ì¦ˆ
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::BeginOverlap);	// ìºë¦­í„° ì¶©ëŒ í•¨ìˆ˜ ìœ„ì„
+	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;							// ìºë¦­í„° ìœ„ì— ëˆ„ê°€ ì˜¬ë¼ ì„¤ ìˆ˜ ìˆëŠ”ì§€
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));										// ìºë¦­í„° ì¶©ëŒ ì±„ë„ = Pawn íƒ€ì…
+	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));											// ìºë¦­í„° ë§¤ì‰¬ ì¶©ëŒ ì±„ë„ = NoCollision
 
-	// ÄÁÆ®·Ñ·¯ È¸Àü »ç¿ë ¾ÈÇÔ
+	// ì»¨íŠ¸ë¡¤ëŸ¬ íšŒì „ ì‚¬ìš© ì•ˆí•¨
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationYaw = false;
 
-	// Ä«¸Ş¶óºÕ »ı¼º ÀÌÈÄ¿¡ ·çÆ® ÄÄÆ÷³ÍÆ®¿¡ ºÙ¿©ÁÜ
+	// ì¹´ë©”ë¼ë¶ ìƒì„± ì´í›„ì— ë£¨íŠ¸ ì»´í¬ë„ŒíŠ¸ì— ë¶™ì—¬ì¤Œ
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->bAbsoluteRotation = true;											// Ä³¸¯ÅÍ°¡ È¸ÀüÇØµµ Ä«¸Ş¶ó È¸Àü¿¡ ¿µÇâ ¹ŞÁö ¾ÊÀ½
+	CameraBoom->bAbsoluteRotation = true;											// ìºë¦­í„°ê°€ íšŒì „í•´ë„ ì¹´ë©”ë¼ íšŒì „ì— ì˜í–¥ ë°›ì§€ ì•ŠìŒ
 	CameraBoom->bDoCollisionTest = false;											
-	CameraBoom->TargetArmLength = 1000.f;											// Ä«¸Ş¶ó °Å¸®
-	CameraBoom->SocketOffset = FVector(0.f, 0.f, 75.f);								// Ä«¸Ş¶ó ¿ÀÇÁ¼Â À§Ä¡ (³ôÀÌ Á¶Á¤
-	CameraBoom->RelativeRotation = FRotator(0.f, 180.f, 0.f);						// Ä«¸Ş¶ó È¸Àü°¢µµ
+	CameraBoom->TargetArmLength = 1000.f;											// ì¹´ë©”ë¼ ê±°ë¦¬
+	CameraBoom->SocketOffset = FVector(0.f, 0.f, 75.f);								// ì¹´ë©”ë¼ ì˜¤í”„ì…‹ ìœ„ì¹˜ (ë†’ì´ ì¡°ì •
+	CameraBoom->RelativeRotation = FRotator(0.f, 180.f, 0.f);						// ì¹´ë©”ë¼ íšŒì „ê°ë„
 
-	// Ä«¸Ş¶ó»ı¼º ÈÄ ºÕ¿¡ ºÙ¿©ÁÖ±â
+	// ì¹´ë©”ë¼ìƒì„± í›„ ë¶ì— ë¶™ì—¬ì£¼ê¸°
 	SideViewCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("SideViewCamera"));
 	SideViewCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	SideViewCameraComponent->bUsePawnControlRotation = false;									// Ä«¸Ş¶ó´Â È¸ÀüÇÏÁö ¾ÊÀ½
+	SideViewCameraComponent->bUsePawnControlRotation = false;									// ì¹´ë©”ë¼ëŠ” íšŒì „í•˜ì§€ ì•ŠìŒ
 
-	// Ä³¸¯ÅÍ ¹«ºê¸ÕÆ® ¼³Á¤
-	//GetCharacterMovement()->bOrientRotationToMovement = true; // ÀÌµ¿ÇÏ´Â ¹æÇâÀ¸·Î È¸Àü
-	//GetCharacterMovement()->RotationRate = FRotator(0.f, 1000.f, 0.f); // È¸ÀüÇÏ´Â ºñÀ²
-	GetCharacterMovement()->GravityScale = 3.f;		// Áß·Â°ª
-	GetCharacterMovement()->AirControl = 0.8f;		// °øÁß¿¡¼­ ÄÁÆ®·Ñ ÇÒ ¼ö ÀÖ´Â Èû
-	GetCharacterMovement()->JumpZVelocity = 1300.f; // Á¡ÇÁ·Â
-	GetCharacterMovement()->GroundFriction = 5.f;	// ¸¶Âû
-	GetCharacterMovement()->MaxWalkSpeed = 1000.f;	// ÃÖ´ë¼Óµµ
-	GetCharacterMovement()->MaxFlySpeed = 1000.f;	// ÃÖ´ë °øÁß ¼Óµµ
+	// ìºë¦­í„° ë¬´ë¸Œë¨¼íŠ¸ ì„¤ì •
+	//GetCharacterMovement()->bOrientRotationToMovement = true; // ì´ë™í•˜ëŠ” ë°©í–¥ìœ¼ë¡œ íšŒì „
+	//GetCharacterMovement()->RotationRate = FRotator(0.f, 1000.f, 0.f); // íšŒì „í•˜ëŠ” ë¹„ìœ¨
+	GetCharacterMovement()->GravityScale = 3.f;		// ì¤‘ë ¥ê°’
+	GetCharacterMovement()->AirControl = 0.8f;		// ê³µì¤‘ì—ì„œ ì»¨íŠ¸ë¡¤ í•  ìˆ˜ ìˆëŠ” í˜
+	GetCharacterMovement()->JumpZVelocity = 1300.f; // ì í”„ë ¥
+	GetCharacterMovement()->GroundFriction = 5.f;	// ë§ˆì°°
+	GetCharacterMovement()->MaxWalkSpeed = 1000.f;	// ìµœëŒ€ì†ë„
+	GetCharacterMovement()->MaxFlySpeed = 1000.f;	// ìµœëŒ€ ê³µì¤‘ ì†ë„
 
-	// Ä³¸¯ÅÍ Á¤º¸ ÃÊ±âÈ­
+	// ì˜¤í† í¬ì„¸ìŠ¤AIë¥¼ PlacedInWorldOrSpawnedë¡œ ë°”ê¿”ì¤Œ
+	// ì´ë ‡ê²Œ í•˜ë©´ ë‹¤ë¥¸ í´ë¼ì´ì–¸íŠ¸ì—ì„œë„ AddMovementInputì„ ì‚¬ìš©í•  ìˆ˜ ìˆìŒ ã…‡ã……ã…‡!
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	// ìºë¦­í„° ì •ë³´ ì´ˆê¸°í™”
 	DamagePercent = 0.f;
 	CurrentState = ECharacterState::EIdle;
 	JumpCount = 0;
 	LifeCount = 0;
 	CharacterClass = ECharacterClass::EUnknown;
 
-	// È÷Æ® ÆÄÆ¼Å¬
+	// íˆíŠ¸ íŒŒí‹°í´
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> HitParticleAsset(TEXT("/Game/StarterContent/Particles/P_Explosion"));
 	if (HitParticleAsset.Succeeded())
 		HitParticle = HitParticleAsset.Object;
+}
+
+APlayerCharacter::~APlayerCharacter()
+{
+	UE_LOG(LogTemp, Log, TEXT("ìºë¦­í„° ì†Œë©¸ì í˜¸ì¶œ"));
 }
 
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ¾Ö´Ô ÀÎ½ºÅÏ½º ºÒ·¯¿À±â
+	// ì• ë‹˜ ì¸ìŠ¤í„´ìŠ¤ ë¶ˆëŸ¬ì˜¤ê¸°
 	if (GetMesh())
 	{
 		AnimInstance = Cast<UPlayerCharacterAnim>(GetMesh()->GetAnimInstance());
 	}
 
-	// ¹«±â ´Ş¾ÆÁÖ±â
+	// ë¬´ê¸° ë‹¬ì•„ì£¼ê¸°
 	UChildActorComponent* ChildActorComp = FindComponentByClass<UChildActorComponent>();
 	if (ChildActorComp)
 	{
@@ -92,12 +103,8 @@ void APlayerCharacter::BeginPlay()
 	}
 	
 	GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());
-	
-	//SetActorTickInterval(0.2f);
-	PlayerLocation = GetActorLocation();
 
-	//NewLocation.Y = PlayerLocation.Y;
-	//NewLocation.Z = PlayerLocation.Z;
+	PlayerLocation = GetActorLocation();
 	SendDelay = 0;
 }
 
@@ -114,28 +121,32 @@ void APlayerCharacter::Tick(float DeltaTime)
 
 	PlayerLocation = GetActorLocation();
 	
-	// ÇÃ·¹ÀÌ¾î À§Ä¡ º¸Á¤
-	// ³» Ä³¸¯ÅÍ°¡ ¾Æ´Ï¸é
+	// í”Œë ˆì´ì–´ ìœ„ì¹˜ ë³´ì •
+	// ë‚´ ìºë¦­í„°ê°€ ì•„ë‹ˆë©´
 	if (!IsMine)
 	{
 		UpdatedLocation = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
 		
-		FRotator NewRotation;
-		if (UpdatedLocation.Y > PlayerLocation.Y) {
-			NewRotation = FRotator(0, 1, 0);
-		}
-		else {
-			NewRotation = FRotator(0, -1, 0);
+		//AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
+		if (CurrentState == ECharacterState::EIdle || CurrentState == ECharacterState::EJump)
+		{
+			FRotator NewRotation;
+			if (UpdatedLocation.Y > PlayerLocation.Y) {
+				//NewRotation = FRotator(0, 1, 0);
+				SetActorRelativeRotation(FRotator(0.f, 90.f, 0.f));
+			}
+			else {
+				//NewRotation = FRotator(0, -1, 0);
+				SetActorRelativeRotation(FRotator(0.f, -90.f, 0.f));
+			}
 		}
 
-		FQuat QuatRotation = FQuat(NewRotation);
-		AddActorLocalRotation(QuatRotation, false, 0, ETeleportType::None);
-		//destination = NewLocation;
 		SetActorLocation(UpdatedLocation, false);
 
 	}
 	else {
-		// ³» À§Ä¡ ¼Û½Å
+		// ë‚´ ìœ„ì¹˜ ì†¡ì‹ 
+		
 		SendDelay += 1;
 		if (SendDelay == 3) {
 
@@ -144,6 +155,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 			GameInstance->SendMessage(PACKET_TYPE::UPDATELOCATION, body, 8);
 			SendDelay = 0;
 		}
+		
 	}
 
 }
@@ -153,17 +165,17 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	// °ÔÀÓÇÃ·¹ÀÌ Å° ¹ÙÀÎµù
+	// ê²Œì„í”Œë ˆì´ í‚¤ ë°”ì¸ë”©
 	check(PlayerInputComponent);
-	// ÀÌµ¿ 
+	// ì´ë™ 
 	PlayerInputComponent->BindAxis("MoveRight", this, &APlayerCharacter::MoveRight);
-	// Á¡ÇÁ
+	// ì í”„
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCharacter::DoJump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
-	// °ø°İ
+	// ê³µê²©
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &APlayerCharacter::Attack);
 	PlayerInputComponent->BindAction("Attack", IE_Released, this, &APlayerCharacter::StopAttack);
-	// ¸·±â
+	// ë§‰ê¸°
 	PlayerInputComponent->BindAction("SpecialAbility", IE_Pressed, this, &APlayerCharacter::SpecialAbility);
 	PlayerInputComponent->BindAction("SpecialAbility", IE_Released, this, &APlayerCharacter::StopSpecialAbility);
 }
@@ -192,7 +204,7 @@ void APlayerCharacter::SetCurrentState(ECharacterState NewState)
 void APlayerCharacter::UpdateLocation(FVector New)
 {
 	NewLocation = New;
-	UE_LOG(LogTemp, Warning, TEXT("update position %f %f"), New.Y, New.Z);
+	//UE_LOG(LogTemp, Warning, TEXT("update position %f %f"), New.Y, New.Z);
 }
 
 void APlayerCharacter::UpdateStatus()
@@ -202,19 +214,19 @@ void APlayerCharacter::UpdateStatus()
 
 void APlayerCharacter::BeginOverlap(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
-	// Ãæµ¹ÇÑ ¿¢ÅÍ ¸ğµÎ ¹è¿­¿¡ ³Ö±â
+	// ì¶©ëŒí•œ ì—‘í„° ëª¨ë‘ ë°°ì—´ì— ë„£ê¸°
 	TArray<AActor*> CollectedActors;
 	GetCapsuleComponent()->GetOverlappingActors(CollectedActors);
 
 	for (int32 iCollected = 0; iCollected < CollectedActors.Num(); ++iCollected)
 	{
-		// Ãæµ¹ÇÑ ¾×ÅÍ°¡ ¹«±âÀÎ°æ¿ì & ±× ¹«±â°¡ ÀÚ½ÅÀÇ ¹«±â°¡ ¾Æ´Ñ °æ¿ì & ¹«±â°¡ È°¼ºÈ­ µÇ¾îÀÖ´Â °æ¿ì
+		// ì¶©ëŒí•œ ì•¡í„°ê°€ ë¬´ê¸°ì¸ê²½ìš° & ê·¸ ë¬´ê¸°ê°€ ìì‹ ì˜ ë¬´ê¸°ê°€ ì•„ë‹Œ ê²½ìš° & ë¬´ê¸°ê°€ í™œì„±í™” ë˜ì–´ìˆëŠ” ê²½ìš°
 		AWeapon* const OverlappedWeapon = Cast<AWeapon>(CollectedActors[iCollected]);
 		if (OverlappedWeapon && (Weapon != OverlappedWeapon))
 		{
 			if (OverlappedWeapon->bIsActive)
 			{
-				// ÇÇ°İ ÇÔ¼ö È£Ãâ
+				// í”¼ê²© í•¨ìˆ˜ í˜¸ì¶œ
 				AttackHit(OverlappedWeapon);
 			}
 			AWeapon_MagicWand* const OverlappedAbility = Cast<AWeapon_MagicWand>(OverlappedWeapon);
@@ -233,18 +245,18 @@ void APlayerCharacter::DoJump()
 		if (CurrentState != ECharacterState::EIdle && CurrentState != ECharacterState::EJump)
 			return;
 
-		// ³ª ÀÏ°æ¿ì, defenthit ¾Ö´Ï¸ŞÀÌ¼Ç Àü¼Û
+		// ë‚˜ ì¼ê²½ìš°, defenthit ì• ë‹ˆë©”ì´ì…˜ ì „ì†¡
 		anibody[0] = (char)ECharacterAction::EA_Jump;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
 
-		// ¶¥¿¡ ´êÀ¸¸é Á¡ÇÁ Ä«¿îÆ® ÃÊ±âÈ­
-		// ¾Ö´Ô ³ëÆ¼ÆÄÀÌ¿¡¼­µµ ÃÊ±âÈ­ ÇØÁÖ±ä ÇÏ´Âµ¥ È¤½Ã ¸ô¶ó¼­
+		// ë•…ì— ë‹¿ìœ¼ë©´ ì í”„ ì¹´ìš´íŠ¸ ì´ˆê¸°í™”
+		// ì• ë‹˜ ë…¸í‹°íŒŒì´ì—ì„œë„ ì´ˆê¸°í™” í•´ì£¼ê¸´ í•˜ëŠ”ë° í˜¹ì‹œ ëª°ë¼ì„œ
 		if (GetCharacterMovement()->IsMovingOnGround() == true)
 		{
 			JumpCount = 0;
 		}
 
-		// Á¡ÇÁ Ä«¿îÆ® 2¹Ì¸¸ÀÏ½Ã Á¡ÇÁ °¡´É(ÃÖ´ë 2´Ü Á¡ÇÁ)
+		// ì í”„ ì¹´ìš´íŠ¸ 2ë¯¸ë§Œì¼ì‹œ ì í”„ ê°€ëŠ¥(ìµœëŒ€ 2ë‹¨ ì í”„)
 		if (JumpCount < 2)
 		{
 			SetCurrentState(ECharacterState::EJump);
@@ -262,34 +274,32 @@ void APlayerCharacter::DoJump()
 
 void APlayerCharacter::MoveRight(float val)
 {
-	//UE_LOG(LogTemp, Log, TEXT("Input Value : %f"), val);
 	if ((CurrentState == ECharacterState::EIdle) || (CurrentState == ECharacterState::EJump))
 	{
 		if(0 != val)
 			SetActorRelativeRotation(FRotator(0.f, -90.f * FMath::RoundFromZero(val), 0.f ));
 
-		// ÀÔ·Â¹ŞÀº ¹æÇâÀ¸·Î ÀÌµ¿
+		// ì…ë ¥ë°›ì€ ë°©í–¥ìœ¼ë¡œ ì´ë™
 		AddMovementInput(FVector(0.f, -1.f, 0.f), val);
 	}
-	
 }
 
 void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 {
-	// ÇÇ°İÇÑ Ä³¸¯ÅÍÀÇ Àü¹æ º¤ÅÍ
+	// í”¼ê²©í•œ ìºë¦­í„°ì˜ ì „ë°© ë²¡í„°
 	FVector EnemyForwardVector = OverlappedWeapon->WeaponOwner->GetActorForwardVector();
 	//UE_LOG(LogTemp, Log, TEXT("EnemyForwardVector : %s"), *EnemyForwardVector.ToString());
 
-	// Àû°ú ³ªÀÇ º¤ÅÍ ³»Àû
-	// ³»Àû °ªÀÌ ¾ç¼ö¸é ÀûÀÌ ³» µÚ¿¡ ÀÖÀ½, À½¼ö¸é ÀûÀÌ ³» ¾Õ¿¡ ÀÖÀ½
+	// ì ê³¼ ë‚˜ì˜ ë²¡í„° ë‚´ì 
+	// ë‚´ì  ê°’ì´ ì–‘ìˆ˜ë©´ ì ì´ ë‚´ ë’¤ì— ìˆìŒ, ìŒìˆ˜ë©´ ì ì´ ë‚´ ì•ì— ìˆìŒ
 	float HitDot = FVector::DotProduct(GetActorForwardVector(), EnemyForwardVector);
 	
 	if (AnimInstance)
 	{
-		// ÀûÀÌ ³» ¾Õ¿¡ ÀÖ°í ¹æ¾î Áß ÀÏ½Ã (¹æÆĞ È÷Æ® ¾Ö´Ï¸ŞÀÌ¼Ç)
+		// ì ì´ ë‚´ ì•ì— ìˆê³  ë°©ì–´ ì¤‘ ì¼ì‹œ (ë°©íŒ¨ íˆíŠ¸ ì• ë‹ˆë©”ì´ì…˜)
 		if ((HitDot < 0 ) && CurrentState == ECharacterState::EDefend)
 		{
-			// ³ª ÀÏ°æ¿ì, defenthit ¾Ö´Ï¸ŞÀÌ¼Ç Àü¼Û
+			// ë‚˜ ì¼ê²½ìš°, defenthit ì• ë‹ˆë©”ì´ì…˜ ì „ì†¡
 			if (IsMine)
 			{
 				anibody[0] = (char)ECharacterAction::EA_DefendHit;
@@ -298,7 +308,7 @@ void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 
 			AnimInstance->PlayDefendHit();
 		}
-		// ÀûÀÌ ³» µÚ¿¡ ÀÖ°Å³ª ¹æ¾î ÁßÀÌ ¾Æ´Ò½Ã (ÀÏ¹İ È÷Æ® ¾Ö´Ï¸ŞÀÌ¼Ç)
+		// ì ì´ ë‚´ ë’¤ì— ìˆê±°ë‚˜ ë°©ì–´ ì¤‘ì´ ì•„ë‹ì‹œ (ì¼ë°˜ íˆíŠ¸ ì• ë‹ˆë©”ì´ì…˜)
 		else
 		{
 			HitandKnockback(EnemyForwardVector, OverlappedWeapon->AttackDamage);
@@ -314,32 +324,30 @@ void APlayerCharacter::AbilityHit(AWeapon_MagicWand * OverlappedAbility)
 
 void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 {
-	// ³ª ÀÏ°æ¿ì Hit ¾Ö´Ï¸ŞÀÌ¼Ç Àü¼Û, hit damage Ã³¸®
+	// ë‚˜ ì¼ê²½ìš° Hit ì• ë‹ˆë©”ì´ì…˜ ì „ì†¡, hit damage ì²˜ë¦¬
 	if (IsMine)
 	{
 		anibody[0] = (char)ECharacterAction::EA_Hit;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
 
-		// µ¥¹ÌÁö ÆÛ¼¾Æ®¿¡ È÷Æ® µ¥¹ÌÁö Ãß°¡
+		// ë°ë¯¸ì§€ í¼ì„¼íŠ¸ì— íˆíŠ¸ ë°ë¯¸ì§€ ì¶”ê°€
 		DamagePercent += HitDamage;
-		// °ø°İ ¹ŞÀº ¹æÇâÀ¸·Î ³Ë¹é
+		// ê³µê²© ë°›ì€ ë°©í–¥ìœ¼ë¡œ ë„‰ë°±
 		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
 
 	}
 
-
-	// ÇöÀçÇàµ¿ Áß´ÜÇÏ°í EHit »óÅÂ·Î ¹Ù²ãÁÖ±â
+	// í˜„ì¬í–‰ë™ ì¤‘ë‹¨í•˜ê³  EHit ìƒíƒœë¡œ ë°”ê¿”ì£¼ê¸°
 	StopAttack();
 	StopSpecialAbility();
 	SetCurrentState(ECharacterState::EHit);
 	AnimInstance->PlayGetHit();
 	
-
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorTransform());
 }
 void APlayerCharacter::Attack()
 {
-	// ³ªÀÏ°æ¿ì attack ¾Ö´Ï¸ŞÀÌ¼Ç Àü¼Û
+	// ë‚˜ì¼ê²½ìš° attack ì• ë‹ˆë©”ì´ì…˜ ì „ì†¡
 	if (IsMine)
 	{
 		if (CurrentState != ECharacterState::EIdle)
@@ -359,7 +367,7 @@ void APlayerCharacter::Attack()
 
 void APlayerCharacter::StopAttack()
 {
-	// ³ª ÀÏ°æ¿ì stopattack ½ÅÈ£ º¸³¿.
+	// ë‚˜ ì¼ê²½ìš° stopattack ì‹ í˜¸ ë³´ëƒ„.
 	if (IsMine)
 	{
 		anibody[0] = (char)ECharacterAction::EA_StopAttack;
@@ -380,4 +388,19 @@ void APlayerCharacter::SpecialAbility()
 void APlayerCharacter::StopSpecialAbility()
 {
 	// THERE IS NO WAY STOP SPECIAL ABILITY OF THIS CHARACTER!!!
+}
+
+void APlayerCharacter::Die()
+{
+	UE_LOG(LogTemp, Warning, TEXT("ë„ì•™ ì¥¬ê¸ˆ"));
+	//GetCharacterMovement()->GravityScale = 0.f;
+	//GetCapsuleComponent()->SetSimulatePhysics(false);
+	/*Weapon->WeaponOwner = nullptr;
+	GameInstance->MyCharacter = nullptr;
+	GameInstance->PlayerList[MyID] = nullptr;*/
+	AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewActor->CameraComponent);
+	GameInstance->PlayerController->SetViewTarget(CenterViewCamera);
+	Destroy();
+	//FVector RespawnLocation = GameInstance->CharacterSpawner->GetRandomPointInVolume();
+	//GameInstance->CharacterSpawner->SpawnCharacter(1, RespawnLocation.Y, RespawnLocation.Z, DamagePercent, true);
 }

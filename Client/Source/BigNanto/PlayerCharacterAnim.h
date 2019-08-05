@@ -13,6 +13,7 @@ class BIGNANTO_API UPlayerCharacterAnim : public UAnimInstance
 	
 public:
 	UPlayerCharacterAnim();
+	~UPlayerCharacterAnim();
 	
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
 

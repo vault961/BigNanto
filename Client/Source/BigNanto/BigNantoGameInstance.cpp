@@ -11,11 +11,14 @@
 #include "CharacterSpawner.h"
 #include "UObject/ConstructorHelpers.h"
 #include "PlayerCharacterAnim.h"
+#include "CenterViewCamera.h"
+#include "BigNantoPlayerController.h"
 
 //#pragma comment (lib, "Ws2_32.lib")
 
 UBigNantoGameInstance::UBigNantoGameInstance()
 {
+	NewPosition.X = 0;
 	BufArraySize = 0;
 	CurrentUserNum = 0;
 	sumLen = 0;
@@ -110,17 +113,18 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	case PACKET_TYPE::ENTER:
 	{
 		// 내 ID 받기
-		MyID = packet.body[0];
-		
+		MyID = (uint8)packet.body[0];
+
 		// 랜덤한 위치에 소환하기 위해 랜덤벡터 생성
 		FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
 
 		// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
-		char buf[20];
-		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_ANSI(*MyName), 3);
+		char buf[30];
+		char tempname[5] = "dsfs";
+		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_UTF8(*MyName), sizeof(FString));	// 추후 tempname 수정해야 함 
 
 		// 서버에게 내 캐릭터 요청
-		SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);  ////////////////// WORK IN PROGRESS
+		SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);
 		break;
 	}
 	case PACKET_TYPE::PLAYERSPAWN:
@@ -134,12 +138,13 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 
 		// 패킷 ID와 내 ID 비교
 		// 내 캐릭터 스폰
-		if (packet.userID == MyID) 
+		if (packet.userID == MyID)
 		{
 			MyCharacter = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
 			PlayerList[packet.userID] = MyCharacter;
 			memcpy(MyCharacter->Name, CharacterName, NameLen);
 			MyCharacter->Name[NameLen] = '\0';
+			MyCharacter->MyID = MyID;
 
 			if (nullptr == PlayerController)
 				PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -150,10 +155,10 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			UE_LOG(LogTemp, Warning, TEXT("myuser login"));
 		}
 		// 다른 캐릭터들 스폰
-		else 
+		else
 		{
 			APlayerCharacter* Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, false);
-			float movespeed = Character->GetVelocity().Size();
+			//float movespeed = Character->GetVelocity().Size();
 			PlayerList[packet.userID] = Character;
 			memcpy(Character->Name, CharacterName, NameLen);
 			Character->Name[NameLen] = '\0';
@@ -179,7 +184,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::UPDATESTATE:
 	{
-
 		if (packet.userID != MyID) {
 			APlayerCharacter* User = PlayerList[packet.userID];
 			switch (packet.body[0]) {

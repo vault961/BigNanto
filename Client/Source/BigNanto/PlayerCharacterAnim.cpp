@@ -25,6 +25,11 @@ UPlayerCharacterAnim::UPlayerCharacterAnim()
 		IncinerateMontage = IncinerateMontageAsset.Object;
 }
 
+UPlayerCharacterAnim::~UPlayerCharacterAnim()
+{
+	UE_LOG(LogTemp, Log, TEXT("캐릭터 애님인스턴스 호출"));
+}
+
 void UPlayerCharacterAnim::NativeUpdateAnimation(float DeltaTime)
 {
 	PlayerCharacter = Cast<APlayerCharacter>(TryGetPawnOwner());

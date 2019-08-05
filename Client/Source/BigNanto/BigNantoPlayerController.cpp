@@ -8,7 +8,13 @@
 void ABigNantoPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
 	SetInputMode(FInputModeUIOnly());
 	bShowMouseCursor = true;
-	UE_LOG(LogTemp, Log, TEXT("내가 돌아왔다"));
+
+	UBigNantoGameInstance* GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());
+	if (nullptr != GameInstance)
+	{
+		//GameInstance->PlayerController = this;
+	}
 }

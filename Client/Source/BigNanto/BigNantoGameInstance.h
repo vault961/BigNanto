@@ -24,7 +24,7 @@ enum class PACKET_TYPE {
 class Packet {
 public:
 	PACKET_TYPE type;
-	char userID;
+	uint8 userID;
 	uint8 body[MAX_PACKET_SIZE];
 
 	uint32 remain;
@@ -67,14 +67,18 @@ public:
 	uint32 Len;
 
 	// 내 유저 정보
-	char MyID;			// 아이디
+	uint8 MyID;			// 아이디
 	FString MyName;		// 이름
 	uint8 MyClassType;	// 직업 명
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	class ACharacterSpawner* CharacterSpawner;
+	UPROPERTY()
+	class ACenterViewCamera* CenterViewActor;
+	UPROPERTY()
+	//class ABigNantoPlayerController* PlayerController;
 	
-	class APlayerCharacter* PlayerList[100];
+	class APlayerCharacter* PlayerList[280];
 	class APlayerCharacter* MyCharacter;
 	class APlayerController* PlayerController;
 	FVector NewPosition;

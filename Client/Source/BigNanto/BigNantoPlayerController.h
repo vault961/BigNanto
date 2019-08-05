@@ -16,4 +16,5 @@ class BIGNANTO_API ABigNantoPlayerController : public APlayerController
 	
 public:
 	virtual void BeginPlay() override;
+	
 };
