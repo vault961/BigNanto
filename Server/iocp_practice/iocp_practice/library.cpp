@@ -40,9 +40,18 @@ void Compress(char *source, int len) {
 		source[k + len] = source[k];
 }
 
-void PushAndSend() {
-
+void User::PushAndSend(SentInfo& temp) {
+	if (ClientSocket.WaitingQueue.empty()) {
+		ClientSocket.WaitingQueue.Push(temp);
+		Sender* PerIoData = new Sender();
+		SendFront(PerIoData);
+	}
+	else
+	{
+		ClientSocket.WaitingQueue.Push(temp);
+	}
 }
+
 void User::GetOthersInfo() {
 	User* fromuser;
 	char idx = Idx;
@@ -62,17 +71,7 @@ void User::GetOthersInfo() {
 
 				auto ko = make_shared<Packet>(PACKET_TYPE::PLAYERSPAWN, namelen + FRONTLEN + sizeof(float)*2 + sizeof(wchar_t), it->first, fromuser->Name);
 				SentInfo temp(ko);
-
-				//PushAndSend(temp);
-				if (ClientSocket.WaitingQueue.empty()) {
-					ClientSocket.WaitingQueue.Push(temp);
-					Sender* PerIoData = new Sender();
-					SendFront(PerIoData);
-				}
-				else
-				{
-					ClientSocket.WaitingQueue.Push(temp);
-				}
+				PushAndSend(temp);
 			}
 		}
 	}
@@ -93,9 +92,7 @@ void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, wchar_t& len) {
 void EnterProcess(User& myuser, shared_ptr<Packet>& temppacket) {
 	temppacket.get()->Body[FRONTLEN] = myuser.Idx;
 	SentInfo temp(temppacket);
-	myuser.ClientSocket.WaitingQueue.Push(temp);
-	Sender* PerIoData = new Sender();
-	myuser.SendFront(PerIoData);
+	myuser.PushAndSend(temp);
 }
 
 void RecvProcess(char * source, int retValue, User& myuser) {

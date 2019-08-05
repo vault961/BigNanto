@@ -120,6 +120,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 	{
 		UpdatedLocation = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
 		
+		AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
 		FRotator NewRotation;
 		if (UpdatedLocation.Y > PlayerLocation.Y) {
 			NewRotation = FRotator(0, 1, 0);
@@ -128,10 +129,10 @@ void APlayerCharacter::Tick(float DeltaTime)
 			NewRotation = FRotator(0, -1, 0);
 		}
 
-		FQuat QuatRotation = FQuat(NewRotation);
-		AddActorLocalRotation(QuatRotation, false, 0, ETeleportType::None);
+		//FQuat QuatRotation = FQuat(NewRotation);
+		//AddActorLocalRotation(QuatRotation, false, 0, ETeleportType::None);
 		//destination = NewLocation;
-		SetActorLocation(UpdatedLocation, false);
+		//SetActorLocation(UpdatedLocation, false);
 
 	}
 	else {

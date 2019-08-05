@@ -32,7 +32,9 @@
 enum class PACKET_TYPE {
 	ENTER,
 	PLAYERSPAWN,
-	UPDATEDATA,
+	UPDATELOCATION,
+	UPDATEDMG,
+	UPDATESTATE,
 };
 typedef struct _PER_HANDLE_DATA {
 	SOCKET Socket;
@@ -187,6 +189,7 @@ public:
 	float PosZ;
 	
 	void SendFront(Sender* overlapped);
+	void PushAndSend(SentInfo& temp);
 	void GetOthersInfo();
 	RWLock wqueue;
 };
