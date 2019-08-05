@@ -86,9 +86,9 @@ void UBigNantoGameInstance::PacketHandler()
 		if (BufArraySize < FRONTLEN)
 			break;
 
-		Len = *(wchar_t*)(targetArray + 2);
+		Len = *(wchar_t*)(targetArray + TYPELEN + USERLEN);
 		if (BufArraySize >= Len) {
-			Packet packet((PACKET_TYPE)(*targetArray), *(targetArray + 1), targetArray + 6, Len);
+			Packet packet((PACKET_TYPE)(*targetArray), *(targetArray + TYPELEN), targetArray + FRONTLEN, Len);
 			PacketProcess(packet);
 			sumLen += Len;
 			BufArraySize -= Len;
@@ -111,14 +111,13 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	{
 		// 내 ID 받기
 		MyID = packet.body[0];
-		char CharacterClass = packet.body[1];
 		
 		// 랜덤한 위치에 소환하기 위해 랜덤벡터 생성
 		FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
 
-		// send class, y, z, damage, name to server TYPE PLAYERSPAWN
+		// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
 		char buf[20];
-		int len = MakeLoginBuf(buf, CharacterClass, RandomLocation.Y, RandomLocation.Z, 0, "dsf", 3);
+		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_ANSI(*MyName), 3);
 
 		// 서버에게 내 캐릭터 요청
 		SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);  ////////////////// WORK IN PROGRESS
@@ -127,6 +126,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::PLAYERSPAWN:
 	{
+
 		char CharacterClass = packet.body[0];
 		float PosY = *(float*)(packet.body + sizeof(char));
 		float PosZ = *(float*)(packet.body + sizeof(char) + sizeof(float));
@@ -134,7 +134,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		uint8* CharacterName = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
 		int NameLen = packet.len - sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t) - FRONTLEN;
 
-
+		UE_LOG(LogTemp, Log, TEXT("%c"), MyID);
 		// 패킷 ID와 내 ID 비교
 		// 내 캐릭터 스폰
 		if (packet.userID == MyID) 
@@ -147,6 +147,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			if (nullptr == PlayerController)
 				PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 			PlayerController->Possess(MyCharacter);
+
+			PlayerController->bShowMouseCursor = false;
 
 			CurrentUserNum++;
 			UE_LOG(LogTemp, Warning, TEXT("myuser login"));
@@ -181,6 +183,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::UPDATESTATE:
 	{
+
 		if (packet.userID != MyID) {
 			APlayerCharacter* User = PlayerList[packet.userID];
 			switch (packet.body[0]) {
@@ -214,7 +217,6 @@ int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float 
 	memcpy(source + 5, &Z, 4);
 	memcpy(source + 9, &damage, 2);
 	memcpy(source + 11, name, namelen);
-
 	return namelen + 11;
 }
 
@@ -225,13 +227,15 @@ void UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort, FStrin
 		UE_LOG(LogTemp, Error, TEXT("Cannot create socket."));
 		return;
 	}
-	UE_LOG(LogTemp, Log, TEXT("Sokcet Created!"));
 
 	UE_LOG(LogTemp, Log, TEXT("ServerIP = %s"), *ServerIP);
 	UE_LOG(LogTemp, Log, TEXT("ServerPort = %d"), ServerPort);
 	UE_LOG(LogTemp, Log, TEXT("UserName = %s"), *UserName);
 	UE_LOG(LogTemp, Log, TEXT("ClassType = %d"), ClassType);
-	
+
+	MyName = UserName;
+	MyClassType = ClassType;
+
 	TSharedRef<FInternetAddr> RemoteAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	FIPv4Address address;
 	FIPv4Address::Parse(ServerIP, address); 
@@ -254,7 +258,5 @@ void UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort, FStrin
 
 	// 게임 입장 패킷 전송
 	char empty[1] = "" ;
-	//UserName.GetCharArray();
-	//SendMessage(PACKET_TYPE::ENTER, (char*)(*UserName + ClassType), sizeof(char*) + sizeof(char*));
 	SendMessage(PACKET_TYPE::ENTER, empty, 1);
 }

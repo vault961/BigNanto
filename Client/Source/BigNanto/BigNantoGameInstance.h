@@ -65,7 +65,11 @@ public:
 	uint32 CurrentUserNum;
 	uint32 sumLen;
 	uint32 Len;
-	char MyID;
+
+	// 내 유저 정보
+	char MyID;			// 아이디
+	FString MyName;		// 이름
+	uint8 MyClassType;	// 직업 명
 
 	UPROPERTY(EditAnywhere)
 	class ACharacterSpawner* CharacterSpawner;

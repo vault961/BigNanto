@@ -235,7 +235,7 @@ void APlayerCharacter::DoJump()
 
 		// 나 일경우, defenthit 애니메이션 전송
 		anibody[0] = (char)ECharacterAction::EA_Jump;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, body, 1);
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
 
 		// 땅에 닿으면 점프 카운트 초기화
 		// 애님 노티파이에서도 초기화 해주긴 하는데 혹시 몰라서
@@ -293,7 +293,7 @@ void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 			if (IsMine)
 			{
 				anibody[0] = (char)ECharacterAction::EA_DefendHit;
-				GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, body, 1);
+				GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
 			}
 
 			AnimInstance->PlayDefendHit();
@@ -318,7 +318,7 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	if (IsMine)
 	{
 		anibody[0] = (char)ECharacterAction::EA_Hit;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, body, 1);
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
 
 		// 데미지 퍼센트에 히트 데미지 추가
 		DamagePercent += HitDamage;
@@ -346,7 +346,7 @@ void APlayerCharacter::Attack()
 			return;
 
 		anibody[0] = (char)ECharacterAction::EA_Attack;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, body, 1);
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
 	}
 
 	if (AnimInstance)
@@ -363,7 +363,7 @@ void APlayerCharacter::StopAttack()
 	if (IsMine)
 	{
 		anibody[0] = (char)ECharacterAction::EA_StopAttack;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, body, 1);
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
 	}
 
 	if (AnimInstance)
