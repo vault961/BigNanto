@@ -1,16 +1,16 @@
 #pragma once
 #include "iocp.h"
-#include <memory>
 
-OrderQueue<Packet> g_OrderQueue;
+
+OrderQueue<SentInfo> g_OrderQueue;
 WSAEVENT OrderQueueEvent;
 RWLock UserMapLock;
 SOCKET ListenSocket;
 HANDLE CompletionPort;
-std::map<char, User*> UserMap;
+std::unordered_map<char, User*> UserMap;
 using namespace std;
 
-int AddSocket(int Socket) {
+char AddSocket(int Socket) {
 	UserMapLock.WriteLock();
 	hash<int> h;
 	char idx = h(Socket);
@@ -40,6 +40,9 @@ void Compress(char *source, int len) {
 		source[k + len] = source[k];
 }
 
+void PushAndSend() {
+
+}
 void User::GetOthersInfo() {
 	User* fromuser;
 	char idx = Idx;
@@ -57,9 +60,10 @@ void User::GetOthersInfo() {
 				memcpy(buf + sizeof(char) + sizeof(float)*2, &fromuser->Damage, sizeof(wchar_t));
 				memcpy(buf + sizeof(char) + sizeof(float)*2 + sizeof(wchar_t), fromuser->Name, namelen);
 
-				Packet temppacket(PACKET_TYPE::PLAYERSPAWN, namelen + FRONTLEN + sizeof(float)*2 + sizeof(wchar_t), it->first, fromuser->Name);
-				SentInfo temp(temppacket);
+				auto ko = make_shared<Packet>(PACKET_TYPE::PLAYERSPAWN, namelen + FRONTLEN + sizeof(float)*2 + sizeof(wchar_t), it->first, fromuser->Name);
+				SentInfo temp(ko);
 
+				//PushAndSend(temp);
 				if (ClientSocket.WaitingQueue.empty()) {
 					ClientSocket.WaitingQueue.Push(temp);
 					Sender* PerIoData = new Sender();
@@ -75,6 +79,25 @@ void User::GetOthersInfo() {
 	UserMapLock.ReadUnLock();
 }
 
+void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, wchar_t& len) {
+	myuser.CharacterClass = *temppacket->Body;
+	myuser.PosY = *(float*)(temppacket->Body + 1);
+	myuser.PosZ = *(float*)(temppacket->Body + sizeof(float) + 1);
+	myuser.Damage = *(wchar_t*)(temppacket->Body + sizeof(float) * 2 + 1);
+	memcpy(myuser.Name, temppacket->Body + sizeof(float) * 3 + 1, len - FRONTLEN - 1 - sizeof(float) * 3);
+	myuser.Name[len - FRONTLEN] = 0;
+
+	printf("username :%s ", myuser.Name);
+}
+
+void EnterProcess(User& myuser, shared_ptr<Packet>& temppacket) {
+	temppacket.get()->Body[FRONTLEN] = myuser.Idx;
+	SentInfo temp(temppacket);
+	myuser.ClientSocket.WaitingQueue.Push(temp);
+	Sender* PerIoData = new Sender();
+	myuser.SendFront(PerIoData);
+}
+
 void RecvProcess(char * source, int retValue, User& myuser) {
 	char * receiveBuffer = myuser.ClientSocket.ReceiveBuffer;
 	int& receivedSize = myuser.ClientSocket.ReceivedBufferSize;
@@ -82,39 +105,32 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	memcpy(receiveBuffer + receivedSize, source, retValue);
 	receivedSize += retValue;
 
-	if (receivedSize < FRONTLEN)
+	if (receivedSize < FRONTLEN)   // 헤더는 무조건 있어야됨
 		return;
 
 	wchar_t len = *(wchar_t*)(receiveBuffer + TYPELEN + USERLEN);
 	printf("%d recieve\n", len);
 
 	if (receivedSize >= len) {
-		Packet temppacket((PACKET_TYPE)*receiveBuffer, len, myuser.Idx, receiveBuffer + FRONTLEN);
-		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - len); // buf 당기기
-		myuser.ClientSocket.ReceivedBufferSize -= len;  // buf resize
+		auto temppacket = make_shared<Packet>((PACKET_TYPE)*receiveBuffer, len, myuser.Idx, receiveBuffer + FRONTLEN);
+		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - len); // array resize
+		myuser.ClientSocket.ReceivedBufferSize -= len;
 
-		// if user hasn't name, put name
-		if (temppacket.Type == PACKET_TYPE::PLAYERSPAWN) {
-			myuser.CharacterClass = *temppacket.Body;
-			myuser.PosY = *(float*)(temppacket.Body + 1);
-			myuser.PosZ = *(float*)(temppacket.Body + sizeof(float) + 1);
-			myuser.Damage = *(wchar_t*)(temppacket.Body + sizeof(float) * 2 + 1);
-			memcpy(myuser.Name, temppacket.Body + sizeof(float)*3 + 1, len - FRONTLEN - 1 - sizeof(float)*3);
-			myuser.Name[len - FRONTLEN] = 0;
-
-			printf("username :%s ", myuser.Name);
-		}
-		else if (temppacket.Type == PACKET_TYPE::ENTER) {
-			temppacket.Body[0] = myuser.Idx;
-			SentInfo temp(temppacket);
-			myuser.ClientSocket.WaitingQueue.Push(temp);
-			Sender* PerIoData = new Sender();
-			myuser.SendFront(PerIoData);
-
+		switch (temppacket->Type) {
+		case PACKET_TYPE::PLAYERSPAWN:
+			SpawnProcess(myuser, temppacket, len);
+			break;
+		case PACKET_TYPE::ENTER:
+			// do not broadcast
+			EnterProcess(myuser, temppacket);
 			return;
+			break;
 		}
+		
+
+		SentInfo temp(temppacket);
 		// broadcast
-		g_OrderQueue.Push(temppacket);
+		g_OrderQueue.Push(temp);
 		SetEvent(OrderQueueEvent);
 	}
 
@@ -144,7 +160,7 @@ void User::SendFront(Sender* overlapped) {
 	}
 	
 	SentInfo &target = ClientSocket.WaitingQueue.Front();
-	wBuf.buf = target.BufRef;
+	wBuf.buf = target.Sp.get()->Body;
 	wBuf.len = target.MaxLen;
 	overlapped->sendinfo = target;
 	WSASend(ClientSocket.Socket, &wBuf, 1, NULL, 0, overlapped, NULL);
@@ -163,7 +179,7 @@ void Sender::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 	}
 	else
 	{
-		wBuf.buf = sendinfo.BufRef + sendinfo.Sended;
+		wBuf.buf = sendinfo.Sp.get()->Body + sendinfo.Sended;
 		wBuf.len = sendinfo.MaxLen - sendinfo.Sended;
 		WSASend(myuser.ClientSocket.Socket, &wBuf, 1, NULL, 0, this, NULL);
 	}

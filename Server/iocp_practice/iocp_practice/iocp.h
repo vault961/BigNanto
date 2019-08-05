@@ -6,7 +6,8 @@
 #include <string.h>
 #include <time.h>
 #include <queue>
-#include <map>
+#include <unordered_map>
+#include <memory>
 #include <functional>
 #pragma comment (lib, "Ws2_32.lib")
 
@@ -25,6 +26,8 @@
 #define USERLEN 1
 #define LENLEN 2
 #define FRONTLEN 4
+
+
 
 enum class PACKET_TYPE {
 	ENTER,
@@ -49,6 +52,10 @@ public:
 		UserID = myIdx;
 		Len = myLen;
 		memcpy(Body + FRONTLEN, myBody, myLen - FRONTLEN);
+		memcpy(Body, &Type, TYPELEN);
+		memcpy(Body + TYPELEN, &UserID, USERLEN);
+		memcpy(Body + TYPELEN + USERLEN, &Len, LENLEN);
+
 	}
 };
 
@@ -107,19 +114,15 @@ class SentInfo {
 public:
 	unsigned int Sended;
 	unsigned int MaxLen;
-	char * BufRef;
-	
+	std::shared_ptr<Packet> Sp;
+
 	SentInfo() {
 
 	}
-	SentInfo(Packet& source) {
-		memcpy(source.Body, &source.Type, TYPELEN);
-		memcpy(source.Body + TYPELEN, &source.UserID, USERLEN);
-		memcpy(source.Body + TYPELEN + USERLEN, &source.Len, LENLEN);
-
-		BufRef = source.Body;
+	SentInfo(std::shared_ptr<Packet> Sr) {
+		Sp = Sr;
 		Sended = 0;
-		MaxLen = source.Len;
+		MaxLen = Sp.get()->Len;
 	}
 };
 
@@ -189,18 +192,21 @@ public:
 };
 
 
-extern OrderQueue<Packet> g_OrderQueue;
+extern OrderQueue<SentInfo> g_OrderQueue;
 extern RWLock UserMapLock;
 extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
-extern std::map<char, User*> UserMap;
+extern std::unordered_map<char, User*> UserMap;
 
 User& GetUser(char idx);
 void CompressArrays(char i);
-int AddSocket(int Socket);
+char AddSocket(int Socket);
 void Compress(char *source, int len);
 void RecvProcess(char * source, int retValue, User& myuser);
 void OrderQueueThread();
+void SpawnProcess(User& myuser, std::shared_ptr<Packet>& temppacket, wchar_t& len);
+void EnterProcess(User& myuser, std::shared_ptr<Packet>& temppacket);
+
 
 template <typename T>
 bool OrderQueue<T>::empty() {

@@ -4,19 +4,27 @@
 #include <thread>
 #include <process.h>
 
-extern OrderQueue<Packet> g_OrderQueue;
+using namespace std;
+
+
+extern OrderQueue<SentInfo> g_OrderQueue;
 extern WSAEVENT OrderQueueEvent;
 extern RWLock UserMapLock;
 extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
-extern std::map<char, User*> UserMap;
+extern std::unordered_map<char, User*> UserMap;
+
 
 void OrderQueueThread() {
 	while (1) {
 		WaitForSingleObject(OrderQueueEvent, INFINITE);
 		while (!g_OrderQueue.empty()) {
-			Packet pc(g_OrderQueue.Pop());
-			SentInfo temp(pc);
+			//Packet pc(g_OrderQueue.Pop()); 
+			//printf("%p ", pc.Body); // 같은주소를 가리킴.
+
+			SentInfo temp(g_OrderQueue.Front());
+			//printf("%p ", temp.Sp.get()->Body);
+			g_OrderQueue.Pop();
 			
 			// UserVec.ReadLock();
 			// UserList.ReadLock();
@@ -96,8 +104,9 @@ int main(void) {
 	memset(&serverAddr, 0, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_port = htons(27015);
+	
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	retValue = bind(ListenSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr));
+	retValue = ::bind(ListenSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr));
 	if (retValue == SOCKET_ERROR)
 		return -1;
 
