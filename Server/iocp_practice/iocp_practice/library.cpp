@@ -79,19 +79,25 @@ void DataAddCopy(char * source, T* get, int size, int& sum) {
 	sum += size;
 }
 
+template <typename T>
+void DataAddGet(T* source, char* get, int size, int& sum) {
+	memcpy(source, get+sum, size);
+	sum += size;
+}
+
 void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, wchar_t& len) {
 	int sum = 0;
 	char * source = temppacket.get()->Body + FRONTLEN;
-	DataAddCopy(source, &myuser.CharacterClass, sizeof(char), sum);
-	DataAddCopy(source, &myuser.PosY, sizeof(float), sum);
-	DataAddCopy(source, &myuser.PosZ, sizeof(float), sum);
-	DataAddCopy(source, &myuser.Damage, sizeof(wchar_t), sum);
+	DataAddGet(&myuser.CharacterClass, source, sizeof(char), sum);
+	DataAddGet(&myuser.PosY, source, sizeof(float), sum);
+	DataAddGet(&myuser.PosZ, source, sizeof(float), sum);
+	DataAddGet(&myuser.Damage, source, sizeof(wchar_t), sum);
 	myuser.Name[len - sum - FRONTLEN] = '\0';
-	DataAddCopy(source, myuser.Name, len-sum-FRONTLEN, sum);
+	DataAddGet(myuser.Name, source, len-sum-FRONTLEN, sum);
 
 	printf("%f %f\n", myuser.PosY, myuser.PosZ);
-		
 	printf("username :%s ", myuser.Name);
+
 }
 
 void EnterProcess(User& myuser, shared_ptr<Packet>& temppacket) {
@@ -129,7 +135,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 			return;
 			break;
 		case PACKET_TYPE::UPDATELOCATION:
-			printf("%f %f\n", *(float*)(temppacket.get()->Body + 4), *(float*)(temppacket.get()->Body+ 8 ));
+			//printf("%f %f\n", *(float*)(temppacket.get()->Body + FRONTLEN), *(float*)(temppacket.get()->Body+FRONTLEN +4  ));
 			break;
 		}
 		
