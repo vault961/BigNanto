@@ -65,7 +65,7 @@ FVector ACharacterSpawner::GetRandomPointInVolume()
 	return RandomLocation;
 }
 
-APlayerCharacter* ACharacterSpawner::SpawnCharacter(char CharacterNum, float PosY, float PosZ, int Damage, bool bIsMine)
+APlayerCharacter* ACharacterSpawner::SpawnCharacter(char CharacterClass, float PosY, float PosZ, int Damage, bool bIsMine)
 {
 	// 월드 체크
 	UWorld* const World = GetWorld();
@@ -75,7 +75,7 @@ APlayerCharacter* ACharacterSpawner::SpawnCharacter(char CharacterNum, float Pos
 		FTransform SpawnTransform(SpawnVector);
 		APlayerCharacter* Character;
 
-		switch (CharacterNum)
+		switch (CharacterClass)
 		{
 		case 1:
 			Character = World->SpawnActorDeferred<APlayerCharacter>(Warrior.Get(), SpawnTransform);
@@ -84,7 +84,7 @@ APlayerCharacter* ACharacterSpawner::SpawnCharacter(char CharacterNum, float Pos
 			Character = World->SpawnActorDeferred<APlayerCharacter>(Wizard.Get(), SpawnTransform);
 			break;
 		default:
-			UE_LOG(LogTemp, Error, TEXT("There is no character number %d"), CharacterNum);
+			UE_LOG(LogTemp, Error, TEXT("There is no character number %d"), CharacterClass);
 			return nullptr;
 		}
 

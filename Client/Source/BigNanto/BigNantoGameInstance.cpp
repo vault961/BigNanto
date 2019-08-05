@@ -19,23 +19,18 @@ UBigNantoGameInstance::UBigNantoGameInstance()
 	BufArraySize = 0;
 	CurrentUserNum = 0;
 	sumLen = 0;
-	bIsConnected = false;
 }
 
 void UBigNantoGameInstance::Init()
 {
 	UE_LOG(LogTemp, Log, TEXT("GameInstance Initiate"));
 
-	// 틱 돌아가기 시작
-	TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UBigNantoGameInstance::Tick));
+	
 	//EnterGame("잉", 1 , "이잉", 3);
 }
 
 bool UBigNantoGameInstance::Tick(float DeltaTime)
 {
-	if (false == bIsConnected)
-		return false;
-
 	PacketHandler();
 	return true;
 }
@@ -107,19 +102,6 @@ void UBigNantoGameInstance::PacketHandler()
 	}
 }
 
-
-//return packet body size
-int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char * name, int namelen) {
-	memcpy(source, &cls, 1);
-	memcpy(source + 1, &Y, 4);
-	memcpy(source + 5, &Z, 4);
-	memcpy(source + 9, &damage, 2);
-	memcpy(source + 11, name, namelen);
-
-	return namelen + 11;
-}
-
-
 void UBigNantoGameInstance::PacketProcess(Packet& packet) 
 {
 	FVector none;
@@ -127,18 +109,20 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	switch (packet.type) {
 	case PACKET_TYPE::ENTER:
 	{
-		
 		// 내 ID 받기
 		MyID = packet.body[0];
+		char CharacterClass = packet.body[1];
+		
+		// 랜덤한 위치에 소환하기 위해 랜덤벡터 생성
 		FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
 
-		char buf[20];
-		int len = MakeLoginBuf(buf, 0, RandomLocation.Y, RandomLocation.Z, 0, "dsf", 3);
 		// send class, y, z, damage, name to server TYPE PLAYERSPAWN
+		char buf[20];
+		int len = MakeLoginBuf(buf, CharacterClass, RandomLocation.Y, RandomLocation.Z, 0, "dsf", 3);
+
 		// 서버에게 내 캐릭터 요청
 		SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);  ////////////////// WORK IN PROGRESS
-
-
+		UE_LOG(LogTemp, Warning, TEXT("내 로그 받았음"));
 		break;
 	}
 	case PACKET_TYPE::PLAYERSPAWN:
@@ -146,9 +130,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		char CharacterClass = packet.body[0];
 		float PosY = *(float*)(packet.body + sizeof(char));
 		float PosZ = *(float*)(packet.body + sizeof(char) + sizeof(float));
-
 		int DamagePercent = *(wchar_t*)(packet.body + sizeof(float) * 2 + sizeof(char));
-		uint8* Name = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
+		uint8* CharacterName = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
 		int NameLen = packet.len - sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t) - FRONTLEN;
 
 
@@ -158,9 +141,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		{
 			MyCharacter = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent,true);
 			PlayerList[packet.userID] = MyCharacter;
-			memcpy(MyCharacter->Name, Name, NameLen);
+			memcpy(MyCharacter->Name, CharacterName, NameLen);
 			MyCharacter->Name[NameLen] = '\0';
-
 
 			if (nullptr == PlayerController)
 				PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -170,18 +152,17 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			UE_LOG(LogTemp, Warning, TEXT("myuser login"));
 		}
 		// 다른 캐릭터들 스폰
-		else 
+		/*else 
 		{
-			APlayerCharacter* OtherCha = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent,
-				false);
-			float movespeed = OtherCha->GetVelocity().Size();
-			PlayerList[packet.userID] = OtherCha;
-			memcpy(OtherCha->Name, Name, NameLen);
-			OtherCha->Name[NameLen] = '\0';
+			APlayerCharacter* Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, false);
+			float movespeed = Character->GetVelocity().Size();
+			PlayerList[packet.userID] = Character;
+			memcpy(Character->Name, CharacterName, NameLen);
+			Character->Name[NameLen] = '\0';
 
 			CurrentUserNum++;
 			UE_LOG(LogTemp, Warning, TEXT("other user login"));
-		}
+		}*/
 		break;
 	}
 	case PACKET_TYPE::UPDATELOCATION:
@@ -213,7 +194,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				User->AnimInstance->PlayDefendHit();
 				break;
 			case (char)ECharacterAction::EA_Hit:
-				
 				User->HitandKnockback(none, 0);
 				break;
 			case (char)ECharacterAction::EA_Jump:
@@ -228,48 +208,53 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 }
 
+int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char * name, int namelen) {
+	memcpy(source, &cls, 1);
+	memcpy(source + 1, &Y, 4);
+	memcpy(source + 5, &Z, 4);
+	memcpy(source + 9, &damage, 2);
+	memcpy(source + 11, name, namelen);
+
+	return namelen + 11;
+}
+
 void UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort, FString UserName, uint8 ClassType)
 {
 	ConnectionSocket = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateSocket(NAME_Stream, TEXT("TCP"), false);
-	UE_LOG(LogTemp, Log, TEXT("socket start"));
 	if (!ConnectionSocket) {
 		UE_LOG(LogTemp, Error, TEXT("Cannot create socket."));
 		return;
 	}
+	UE_LOG(LogTemp, Log, TEXT("Sokcet Created!"));
 
 	UE_LOG(LogTemp, Log, TEXT("ServerIP = %s"), *ServerIP);
 	UE_LOG(LogTemp, Log, TEXT("ServerPort = %d"), ServerPort);
 	UE_LOG(LogTemp, Log, TEXT("UserName = %s"), *UserName);
 	UE_LOG(LogTemp, Log, TEXT("ClassType = %d"), ClassType);
 	
-	//CharacterSpawner->SpawnCharacter(ClassType, 1, 1, 0, 1);
-
 	TSharedRef<FInternetAddr> RemoteAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	FIPv4Address address;
-	//FString IP = "172.18.33.156";			// 서버 아이피 (박진서)
-	//FString IP = "172.18.33.158";			// 서버 아이피 (서영균)
-	//FIPv4Address::Parse(IP, address);
-	FIPv4Address::Parse(ServerIP, address);
-	RemoteAddress->SetIp(address.Value);
-	//RemoteAddress->SetPort(27015);			// 서버 포트
-	RemoteAddress->SetPort(ServerPort);
+	FIPv4Address::Parse(ServerIP, address); 
+	RemoteAddress->SetIp(address.Value);	// 서버 아이피 세팅
+	RemoteAddress->SetPort(ServerPort);		// 서버 포트 세팅
 	
-	UE_LOG(LogTemp, Log, TEXT("흐으으으으으으으음"));
-
+	// 소켓 연결 여부 확인
 	if (ConnectionSocket->Connect(*RemoteAddress))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Connection done."));
-		bIsConnected = true;
-		return;
+
+		// 틱 돌아가기 시작
+		TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UBigNantoGameInstance::Tick));
 	}
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Red, FString::Printf(TEXT("Connection Failed")));
-		bIsConnected = false;
 		return;
 	}
 
 	// 게임 입장 패킷 전송
-	//char empty[20] = "";
-	//SendMessage(PACKET_TYPE::ENTER, "", 1);
+	char empty[1] = "" ;
+	//UserName.GetCharArray();
+	//SendMessage(PACKET_TYPE::ENTER, (char*)(*UserName + ClassType), sizeof(char*) + sizeof(char*));
+	SendMessage(PACKET_TYPE::ENTER, empty, 1);
 }
