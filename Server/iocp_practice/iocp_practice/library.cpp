@@ -95,7 +95,7 @@ void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, wchar_t& len) {
 }
 
 void EnterProcess(User& myuser, shared_ptr<Packet>& temppacket) {
-	memcpy(temppacket.get()->Body + LENLEN, &myuser.ClientSocket.Socket, USERLEN);
+//	memcpy(temppacket.get()->Body + LENLEN, &myuser.ClientSocket.Socket, USERLEN);
 	SentInfo temp(temppacket);
 	myuser.PushAndSend(temp);
 }
@@ -114,7 +114,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	printf("%d recieve\n", len);
 
 	if (receivedSize >= len) {
-		auto temppacket = make_shared<Packet>((PACKET_TYPE)*receiveBuffer, len, myuser.ClientSocket.Socket, receiveBuffer + FRONTLEN);
+		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(char*)(receiveBuffer+USERLEN+LENLEN), len, myuser.ClientSocket.Socket, receiveBuffer + FRONTLEN);
 		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - len); // array resize
 		myuser.ClientSocket.ReceivedBufferSize -= len;
 
@@ -124,6 +124,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 			break;
 		case PACKET_TYPE::ENTER:
 			// do not broadcast
+			printf("user enter!\n");
 			EnterProcess(myuser, temppacket);
 			return;
 			break;
