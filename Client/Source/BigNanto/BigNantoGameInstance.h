@@ -24,7 +24,7 @@ enum class PACKET_TYPE {
 class Packet {
 public:
 	PACKET_TYPE type;
-	char userID;
+	uint8 userID;
 	uint8 body[MAX_PACKET_SIZE];
 
 	uint32 remain;
@@ -74,7 +74,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	class ACharacterSpawner* CharacterSpawner;
 	
-	class APlayerCharacter* PlayerList[100];
+	class APlayerCharacter* PlayerList[280];
 	class APlayerCharacter* MyCharacter;
 	class APlayerController* PlayerController;
 	FVector NewPosition;

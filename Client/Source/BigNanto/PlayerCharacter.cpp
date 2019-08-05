@@ -120,7 +120,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 	{
 		UpdatedLocation = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
 		
-		AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
+		//AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
 		FRotator NewRotation;
 		if (UpdatedLocation.Y > PlayerLocation.Y) {
 			NewRotation = FRotator(0, 1, 0);
@@ -128,7 +128,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 		else {
 			NewRotation = FRotator(0, -1, 0);
 		}
-
+		UE_LOG(LogTemp, Warning, TEXT("ndofnaosfosdo"));
 		//FQuat QuatRotation = FQuat(NewRotation);
 		//AddActorLocalRotation(QuatRotation, false, 0, ETeleportType::None);
 		//destination = NewLocation;
@@ -137,6 +137,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 	}
 	else {
 		// 내 위치 송신
+		
 		SendDelay += 1;
 		if (SendDelay == 3) {
 
@@ -145,6 +146,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 			GameInstance->SendMessage(PACKET_TYPE::UPDATELOCATION, body, 8);
 			SendDelay = 0;
 		}
+		
 	}
 
 }

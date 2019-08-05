@@ -145,6 +145,7 @@ int main(void) {
 
 		CreateIoCompletionPort((HANDLE)Accept, CompletionPort, (DWORD)PerHandleData, 0);
 
+		//printf("%d is find\n", UserMap.count(myidx));
 		(UserMap.find(myidx)->second)->GetOthersInfo();
 
 		PerIoData = new Recver();
