@@ -27,9 +27,6 @@ UBigNantoGameInstance::UBigNantoGameInstance()
 void UBigNantoGameInstance::Init()
 {
 	UE_LOG(LogTemp, Log, TEXT("GameInstance Initiate"));
-
-	
-	//EnterGame("잉", 1 , "이잉", 3);
 }
 
 bool UBigNantoGameInstance::Tick(float DeltaTime)
@@ -97,7 +94,9 @@ void UBigNantoGameInstance::PacketHandler()
 
 		Len = *(wchar_t*)targetArray;
 		if (BufArraySize >= Len) {
-			Packet packet((PACKET_TYPE)*(targetArray+USERLEN+LENLEN), *(uint32*)(targetArray + LENLEN), targetArray + FRONTLEN, Len);
+
+			Packet packet((PACKET_TYPE)*(char*)(targetArray+ LENLEN + USERLEN), *(uint32*)(targetArray + LENLEN), targetArray + FRONTLEN, Len);
+
 			PacketProcess(packet);
 			sumLen += Len;
 			BufArraySize -= Len;
@@ -119,15 +118,14 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	case PACKET_TYPE::ENTER:
 	{
 		// 내 ID 받기
-		MyID = (uint8)packet.body[0];
+		MyID = packet.userID;
 
 		// 랜덤한 위치에 소환하기 위해 랜덤벡터 생성
 		FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
 
 		// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
 		char buf[30];
-		char tempname[5] = "dsfs";
-		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_UTF8(*MyName), sizeof(FString));	// 추후 tempname 수정해야 함 
+		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_UTF8(*MyName), sizeof(FString));
 
 		// 서버에게 내 캐릭터 요청
 		SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);
@@ -148,6 +146,11 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("mssss"));
 			MyCharacter = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
+			if (nullptr == MyCharacter)
+			{
+				UE_LOG(LogTemp, Error, TEXT("내 캐릭터를 정상적으로 스폰할 수 없습니다"));
+				return;
+			}
 			PlayerList[packet.userID] = MyCharacter;
 			memcpy(MyCharacter->Name, CharacterName, NameLen);
 			MyCharacter->Name[NameLen] = '\0';
@@ -165,6 +168,11 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		else
 		{
 			APlayerCharacter* Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, false);
+			if (nullptr == Character)
+			{
+				UE_LOG(LogTemp, Error, TEXT("내 캐릭터를 정상적으로 스폰할 수 없습니다"));
+				return;
+			}
 			//float movespeed = Character->GetVelocity().Size();
 			PlayerList[packet.userID] = Character;
 			memcpy(Character->Name, CharacterName, NameLen);
@@ -235,6 +243,7 @@ void UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort, FStrin
 		UE_LOG(LogTemp, Error, TEXT("Cannot create socket."));
 		return;
 	}
+	UE_LOG(LogTemp, Log, TEXT("PlayerController Name : %s"), *PlayerController->GetName());
 
 	UE_LOG(LogTemp, Log, TEXT("ServerIP = %s"), *ServerIP);
 	UE_LOG(LogTemp, Log, TEXT("ServerPort = %d"), ServerPort);

@@ -15,6 +15,6 @@ void ABigNantoPlayerController::BeginPlay()
 	UBigNantoGameInstance* GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());
 	if (nullptr != GameInstance)
 	{
-		//GameInstance->PlayerController = this;
+		GameInstance->PlayerController = this;
 	}
 }

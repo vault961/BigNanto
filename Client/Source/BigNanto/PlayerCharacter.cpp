@@ -127,7 +127,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 	{
 		UpdatedLocation = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
 		
-		//AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
+		AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
 		if (CurrentState == ECharacterState::EIdle || CurrentState == ECharacterState::EJump)
 		{
 			FRotator NewRotation;
@@ -139,7 +139,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 			}
 		}
 
-		SetActorLocation(UpdatedLocation, false);
+		//SetActorLocation(UpdatedLocation, false);
 
 	}
 	else {
@@ -396,7 +396,7 @@ void APlayerCharacter::Die()
 	GameInstance->MyCharacter = nullptr;
 	GameInstance->PlayerList[MyID] = nullptr;*/
 	AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewActor->CameraComponent);
-	GameInstance->PlayerController->SetViewTarget(CenterViewCamera);
+	GameInstance->PlayerController->SetViewTargetWithBlend(CenterViewCamera);
 	Destroy();
 	//FVector RespawnLocation = GameInstance->CharacterSpawner->GetRandomPointInVolume();
 	//GameInstance->CharacterSpawner->SpawnCharacter(1, RespawnLocation.Y, RespawnLocation.Z, DamagePercent, true);
