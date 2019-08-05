@@ -63,7 +63,7 @@ APlayerCharacter::APlayerCharacter()
 
 	// 오토포세스AI를 PlacedInWorldOrSpawned로 바꿔줌
 	// 이렇게 하면 다른 클라이언트에서도 AddMovementInput을 사용할 수 있음 ㅇㅅㅇ!
-	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	//AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	// 캐릭터 정보 초기화
 	DamagePercent = 0.f;
@@ -396,7 +396,7 @@ void APlayerCharacter::Die()
 	GameInstance->MyCharacter = nullptr;
 	GameInstance->PlayerList[MyID] = nullptr;*/
 	AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewActor->CameraComponent);
-	GameInstance->PlayerController->SetViewTarget(CenterViewCamera);
+	GameInstance->PlayerController->SetViewTargetWithBlend(CenterViewCamera);
 	Destroy();
 	//FVector RespawnLocation = GameInstance->CharacterSpawner->GetRandomPointInVolume();
 	//GameInstance->CharacterSpawner->SpawnCharacter(1, RespawnLocation.Y, RespawnLocation.Z, DamagePercent, true);

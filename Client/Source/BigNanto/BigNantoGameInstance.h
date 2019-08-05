@@ -26,13 +26,13 @@ enum class PACKET_TYPE {
 class Packet {
 public:
 	PACKET_TYPE type;
-	uint8 userID;
+	uint32 userID;
 	uint8 body[MAX_PACKET_SIZE];
 
 	uint32 remain;
 	uint32 len;
 
-	Packet(PACKET_TYPE myType, uint8 myId, uint8* myBody, uint32 myLen) {
+	Packet(PACKET_TYPE myType, uint32 myId, uint8* myBody, uint32 myLen) {
 		type = myType;
 		userID = myId;
 		len = myLen;
@@ -69,7 +69,7 @@ public:
 	uint32 Len;
 
 	// 내 유저 정보
-	uint8 MyID;			// 아이디
+	uint32 MyID;			// 아이디
 	FString MyName;		// 이름
 	uint8 MyClassType;	// 직업 명
 

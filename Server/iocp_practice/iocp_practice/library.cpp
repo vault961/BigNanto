@@ -120,7 +120,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 
 		switch (temppacket.get()->Type) {
 		case PACKET_TYPE::PLAYERSPAWN:
-			SpawnProcess(myuser, temppacket, len);
+			//SpawnProcess(myuser, temppacket, len);
 			break;
 		case PACKET_TYPE::ENTER:
 			// do not broadcast
