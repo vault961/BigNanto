@@ -9,9 +9,11 @@
 #define BUFLEN 512
 #define MAX_PACKET_SIZE 3000
 #define NAMELEN 20
-#define USERLEN 1
+
+#define LENLEN 2
+#define USERLEN 4
 #define TYPELEN 1
-#define FRONTLEN 4
+#define FRONTLEN 7
 
 enum class PACKET_TYPE {
 	ENTER,
@@ -91,4 +93,9 @@ public:
 	// 플레이어 입장
 	UFUNCTION(BlueprintCallable)
 	void EnterGame(FString ServerIP, int32 ServerPort, FString UserName, uint8 ClassType);
+
+	// 패킷 만들때 편하게
+
+	template <typename T>
+	void DataAddCopy(char * source, T* get, int size, int& sum);
 };

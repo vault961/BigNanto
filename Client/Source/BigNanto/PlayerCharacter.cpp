@@ -128,7 +128,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 		else {
 			NewRotation = FRotator(0, -1, 0);
 		}
-		UE_LOG(LogTemp, Warning, TEXT("ndofnaosfosdo"));
+		//UE_LOG(LogTemp, Warning, TEXT("ndofnaosfosdo"));
 		//FQuat QuatRotation = FQuat(NewRotation);
 		//AddActorLocalRotation(QuatRotation, false, 0, ETeleportType::None);
 		//destination = NewLocation;
@@ -181,6 +181,7 @@ void APlayerCharacter::SetWeaponActive(bool bIsActive)
 	if (Weapon)
 		Weapon->bIsActive = bIsActive;
 }
+
 
 ECharacterState APlayerCharacter::GetCurrentState() const
 {

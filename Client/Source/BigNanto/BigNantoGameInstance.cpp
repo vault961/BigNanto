@@ -51,8 +51,8 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t B
 
 	char BUF[BUFLEN];
 
-	memcpy(BUF, &Type, 1);
-	memcpy(BUF + TYPELEN + USERLEN, &size, 2);
+	memcpy(BUF + LENLEN + USERLEN, &Type, TYPELEN);
+	memcpy(BUF, &size, LENLEN);
 	memcpy(BUF + FRONTLEN, Body, BodySize);
 
 	do {
@@ -65,6 +65,12 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t B
 
 	} while (size > 0);
 	return;
+}
+
+template <typename T>
+void UBigNantoGameInstance::DataAddCopy(char * source, T* get, int size, int& sum) {
+	memcpy(source + sum, get, size);
+	sum += size;
 }
 
 void UBigNantoGameInstance::PacketHandler()
@@ -87,9 +93,9 @@ void UBigNantoGameInstance::PacketHandler()
 		if (BufArraySize < FRONTLEN)
 			break;
 
-		Len = *(wchar_t*)(targetArray + TYPELEN + USERLEN);
+		Len = *(wchar_t*)targetArray;
 		if (BufArraySize >= Len) {
-			Packet packet((PACKET_TYPE)(*targetArray), *(targetArray + TYPELEN), targetArray + FRONTLEN, Len);
+			Packet packet((PACKET_TYPE)(*targetArray), *(targetArray + LENLEN), targetArray + FRONTLEN, Len);
 			PacketProcess(packet);
 			sumLen += Len;
 			BufArraySize -= Len;
@@ -128,6 +134,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::PLAYERSPAWN:
 	{
+		int sum = 0;
 
 		char CharacterClass = packet.body[0];
 		float PosY = *(float*)(packet.body + sizeof(char));
@@ -215,12 +222,13 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 }
 
 int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char * name, int namelen) {
-	memcpy(source, &cls, 1);
-	memcpy(source + 1, &Y, 4);
-	memcpy(source + 5, &Z, 4);
-	memcpy(source + 9, &damage, 2);
-	memcpy(source + 11, name, namelen);
-	return namelen + 11;
+	int sum = 0;
+	DataAddCopy(source, &cls, sizeof(char), sum);
+	DataAddCopy(source, &Y, sizeof(float), sum);
+	DataAddCopy(source, &Z, sizeof(float), sum);
+	DataAddCopy(source, &damage, sizeof(wchar_t), sum);
+	DataAddCopy(source, &name, namelen, sum);
+	return sum;
 }
 
 void UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort, FString UserName, uint8 ClassType)

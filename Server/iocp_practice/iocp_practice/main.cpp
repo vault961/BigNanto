@@ -12,43 +12,24 @@ extern WSAEVENT OrderQueueEvent;
 extern RWLock UserMapLock;
 extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
-extern std::unordered_map<char, User*> UserMap;
+extern std::map<SOCKET, User*> UserMap;
 
 
 void OrderQueueThread() {
 	while (1) {
 		WaitForSingleObject(OrderQueueEvent, INFINITE);
 		while (!g_OrderQueue.empty()) {
-			//Packet pc(g_OrderQueue.Pop()); 
-			//printf("%p ", pc.Body); // 같은주소를 가리킴.
-
 			SentInfo temp(g_OrderQueue.Front());
-			//printf("%p ", temp.Sp.get()->Body);
 			g_OrderQueue.Pop();
 			
-			// UserVec.ReadLock();
-			// UserList.ReadLock();
-			// for (int i = 0;i < UserVec.size();i++) {
-			//  	fromuser = UserList[UserVec[i]];
-
 			UserMapLock.ReadLock();
-			for (auto it = UserMap.begin();it != UserMap.end(); it++) {
-				User * targetuser = it->second;
-				
-				if (targetuser->ClientSocket.WaitingQueue.empty()) {
-					targetuser->ClientSocket.WaitingQueue.Push(temp);
-					Sender* PerIoData = new Sender();
-					targetuser->SendFront(PerIoData);
-				}
-				else
-				{
-					targetuser->ClientSocket.WaitingQueue.Push(temp);
-				}
-			}
+			for (auto it = UserMap.begin();it != UserMap.end(); it++)
+				(it->second)->PushAndSend(temp);
 			UserMapLock.ReadUnLock();
 		}
 	}
 }
+
 
 unsigned int __stdcall ServerWorkerThread(LPVOID CompletionPortID) {
 	HANDLE CompletionPort = (HANDLE)CompletionPortID;
@@ -63,7 +44,7 @@ unsigned int __stdcall ServerWorkerThread(LPVOID CompletionPortID) {
 			//close socket
 			printf("close!");
 			closesocket(PerHandleData->Socket);
-			CompressArrays(PerHandleData->idx);
+			CompressArrays(PerHandleData->Socket);
 
 			free(PerHandleData);
 			delete (Worker*)RecvData;
@@ -114,7 +95,7 @@ int main(void) {
 	OrderQueueEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	
 	//listen
-	listen(ListenSocket, 20);
+	listen(ListenSocket, MAX_USER);
 	
 	std::thread th1(OrderQueueThread);
 	Recver * PerIoData;
@@ -130,23 +111,26 @@ int main(void) {
 		RemoteLen = sizeof(saRemote);
 		Accept = accept(ListenSocket, (SOCKADDR*)&saRemote, &RemoteLen);
 
+		UserMapLock.ReadLock();
 		if (UserMap.size() >= WSA_MAXIMUM_WAIT_EVENTS) {
 			printf("too many connections");
 			closesocket(Accept);
 			break;
 		}
+		UserMapLock.ReadUnLock();
 
-		char myidx = AddSocket(Accept);
+		AddSocket(Accept);
 
 		PerHandleData = (LPPER_HANDLE_DATA)malloc(sizeof(PER_HANDLE_DATA));
 		PerHandleData->Socket = Accept;
-		PerHandleData->idx = myidx;
 		memcpy(&(PerHandleData->ClientAddr), &saRemote, RemoteLen);
 
 		CreateIoCompletionPort((HANDLE)Accept, CompletionPort, (DWORD)PerHandleData, 0);
 
-		//printf("%d is find\n", UserMap.count(myidx));
-		(UserMap.find(myidx)->second)->GetOthersInfo();
+		UserMapLock.ReadLock();
+		(UserMap.find(Accept)->second)->GetOthersInfo();
+		UserMapLock.ReadUnLock();
+		
 
 		PerIoData = new Recver();
 		flags = 0;
