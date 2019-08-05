@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <queue>
-#include <unordered_map>
+#include <map>
 #include <memory>
 #include <functional>
 #pragma comment (lib, "Ws2_32.lib")
@@ -15,7 +15,7 @@
 #define MAX_BUFFER_SIZE 512
 #define MAX_PACKET_SIZE 512
 #define MAX_SOCKET_BUFFER_SIZE 10000
-#define MAX_USER 10
+#define MAX_USER 50
 
 #define RECV_POSTED 1
 #define SENDER 2
@@ -23,9 +23,9 @@
 #define SEND_POSTED 4
 
 #define TYPELEN 1
-#define USERLEN 1
+#define USERLEN 4
 #define LENLEN 2
-#define FRONTLEN 4
+#define FRONTLEN 7
 
 
 
@@ -38,7 +38,6 @@ enum class PACKET_TYPE {
 };
 typedef struct _PER_HANDLE_DATA {
 	SOCKET Socket;
-	char idx;
 	SOCKADDR_IN ClientAddr;
 } PER_HANDLE_DATA, *LPPER_HANDLE_DATA;
 
@@ -46,17 +45,20 @@ typedef struct _PER_HANDLE_DATA {
 class Packet{
 public:
 	PACKET_TYPE Type;
-	char UserID;
+	SOCKET UserID;
 	wchar_t Len;
 	char Body[MAX_PACKET_SIZE];
-	Packet(PACKET_TYPE myType, wchar_t myLen, char myIdx, char * myBody) {
+	Packet(PACKET_TYPE myType, wchar_t myLen, SOCKET myIdx, char * myBody) {
 		Type = myType;
 		UserID = myIdx;
 		Len = myLen;
 		memcpy(Body + FRONTLEN, myBody, myLen - FRONTLEN);
-		memcpy(Body, &Type, TYPELEN);
-		memcpy(Body + TYPELEN, &UserID, USERLEN);
-		memcpy(Body + TYPELEN + USERLEN, &Len, LENLEN);
+		memcpy(Body + LENLEN + USERLEN, &Type, TYPELEN);
+		memcpy(Body + LENLEN, &UserID, USERLEN);
+		memcpy(Body, &Len, LENLEN);
+
+	}
+	~Packet() {
 
 	}
 };
@@ -171,8 +173,7 @@ public:
 
 class User {
 public:
-	User(char idx, int socket) {
-		Idx = idx;
+	User(SOCKET socket) {
 		ClientSocket.Socket = socket;
 		CharacterClass = 0;
 		PosY = 0;
@@ -180,7 +181,6 @@ public:
 		Damage = 0;
 		ClientSocket.ReceivedBufferSize = 0;
 	}
-	char Idx;
 	ClientSocket ClientSocket;
 	char Name[30];
 	char CharacterClass;
@@ -199,17 +199,19 @@ extern OrderQueue<SentInfo> g_OrderQueue;
 extern RWLock UserMapLock;
 extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
-extern std::unordered_map<char, User*> UserMap;
+extern std::map<SOCKET, User*> UserMap;
 
-User& GetUser(char idx);
-void CompressArrays(char i);
-char AddSocket(int Socket);
+User& GetUser(SOCKET idx);
+void CompressArrays(SOCKET i);
+void AddSocket(SOCKET Socket);
 void Compress(char *source, int len);
 void RecvProcess(char * source, int retValue, User& myuser);
 void OrderQueueThread();
 void SpawnProcess(User& myuser, std::shared_ptr<Packet>& temppacket, wchar_t& len);
 void EnterProcess(User& myuser, std::shared_ptr<Packet>& temppacket);
 
+template <typename T>
+void DataAddCopy(char * source, T* get, int size, int& sum);
 
 template <typename T>
 bool OrderQueue<T>::empty() {

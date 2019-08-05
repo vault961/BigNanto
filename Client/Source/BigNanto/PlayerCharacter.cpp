@@ -132,11 +132,9 @@ void APlayerCharacter::Tick(float DeltaTime)
 		{
 			FRotator NewRotation;
 			if (UpdatedLocation.Y > PlayerLocation.Y) {
-				//NewRotation = FRotator(0, 1, 0);
 				SetActorRelativeRotation(FRotator(0.f, 90.f, 0.f));
 			}
 			else {
-				//NewRotation = FRotator(0, -1, 0);
 				SetActorRelativeRotation(FRotator(0.f, -90.f, 0.f));
 			}
 		}
@@ -191,6 +189,7 @@ void APlayerCharacter::SetWeaponActive(bool bIsActive)
 		Weapon->bIsActive = bIsActive;
 }
 
+
 ECharacterState APlayerCharacter::GetCurrentState() const
 {
 	return CurrentState;
@@ -204,12 +203,10 @@ void APlayerCharacter::SetCurrentState(ECharacterState NewState)
 void APlayerCharacter::UpdateLocation(FVector New)
 {
 	NewLocation = New;
-	//UE_LOG(LogTemp, Warning, TEXT("update position %f %f"), New.Y, New.Z);
 }
 
 void APlayerCharacter::UpdateStatus()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("update status"));
 }
 
 void APlayerCharacter::BeginOverlap(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
