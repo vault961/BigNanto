@@ -212,6 +212,8 @@ void EnterProcess(User& myuser, std::shared_ptr<Packet>& temppacket);
 
 template <typename T>
 void DataAddCopy(char * source, T* get, int size, int& sum);
+template <typename T>
+void DataAddGet(T* source, char* get, int size, int& sum);
 
 template <typename T>
 bool OrderQueue<T>::empty() {

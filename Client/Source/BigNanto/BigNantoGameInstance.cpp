@@ -97,7 +97,7 @@ void UBigNantoGameInstance::PacketHandler()
 
 		Len = *(wchar_t*)targetArray;
 		if (BufArraySize >= Len) {
-			Packet packet((PACKET_TYPE)(*targetArray), *(targetArray + LENLEN), targetArray + FRONTLEN, Len);
+			Packet packet((PACKET_TYPE)*(targetArray+USERLEN+LENLEN), *(uint32*)(targetArray + LENLEN), targetArray + FRONTLEN, Len);
 			PacketProcess(packet);
 			sumLen += Len;
 			BufArraySize -= Len;
@@ -146,6 +146,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		// 내 캐릭터 스폰
 		if (packet.userID == MyID)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("mssss"));
 			MyCharacter = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
 			PlayerList[packet.userID] = MyCharacter;
 			memcpy(MyCharacter->Name, CharacterName, NameLen);
