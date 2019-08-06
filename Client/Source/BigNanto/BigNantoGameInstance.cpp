@@ -11,8 +11,8 @@
 #include "CharacterSpawner.h"
 #include "UObject/ConstructorHelpers.h"
 #include "PlayerCharacterAnim.h"
-#include "CenterViewCamera.h"
 #include "BigNantoPlayerController.h"
+#include "BigNantoGameModeBase.h"
 
 //#pragma comment (lib, "Ws2_32.lib")
 
@@ -123,7 +123,10 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	switch (packet.type) {
 	case PACKET_TYPE::NAMECHECK:
 	{
-		if (packet.body[0] == 0) { // 중복된 이름없을 때
+		// 중복된 이름없을 때
+		if (packet.body[0] == 0) { 
+			GameModeBase->RemoveAllWidget();
+			
 			// 내 ID 받기
 			MyID = packet.userID;
 
@@ -140,7 +143,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);
 		}
 		else { // 중복된 이름 있을 때
-
+			UE_LOG(LogTemp, Warning, TEXT("중복된 이름입니다"));
 		}
 		break;
 	}
@@ -163,51 +166,33 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		int NameLen = packet.len - sum - FRONTLEN;
 		DataAddGet(PlayerName, source, NameLen, sum);
 
+		APlayerCharacter* Character;
+
 		// 패킷 ID와 내 ID 비교
 		// 내 캐릭터 스폰
 		if (packet.userID == MyID)
 		{
-			MyCharacter = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
-			if (nullptr == MyCharacter)
-			{
-				UE_LOG(LogTemp, Error, TEXT("내 캐릭터를 정상적으로 스폰할 수 없습니다"));
-				return;
-			}
-			PlayerList[packet.userID] = MyCharacter;
-
-			memcpy(MyCharacter->Name, PlayerName, NameLen);
-			MyCharacter->Name[NameLen] = '\0';
-
-			char NameArray[100];
-			memcpy(NameArray, PlayerName, NameLen);
-			MyCharacter->PlayerName = FString(UTF8_TO_TCHAR(NameArray));
-			MyCharacter->MyID = MyID;
+			Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
 
 			if (nullptr == PlayerController)
 				PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-			PlayerController->Possess(MyCharacter);
-
-			CurrentUserNum++;
-			UE_LOG(LogTemp, Warning, TEXT("myuser login"));
+			PlayerController->Possess(Character);
+			Character->MyID = MyID;
 		}
 		// 다른 캐릭터들 스폰
 		else
 		{
-			APlayerCharacter* Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, false);
-			if (nullptr == Character)
-			{
-				UE_LOG(LogTemp, Error, TEXT("내 캐릭터를 정상적으로 스폰할 수 없습니다"));
-				return;
-			}
-			//float movespeed = Character->GetVelocity().Size();
-			PlayerList[packet.userID] = Character;
-
-			memcpy(Character->Name, PlayerName, NameLen);
-			Character->Name[NameLen] = '\0';
-
-			CurrentUserNum++;
-			UE_LOG(LogTemp, Warning, TEXT("other user login"));
+			Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, false);
 		}
+
+		if (nullptr == Character)
+		{
+			UE_LOG(LogTemp, Error, TEXT("내 캐릭터를 정상적으로 스폰할 수 없습니다"));
+			return;
+		}
+
+		PlayerList[packet.userID] = Character;
+		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName));
 		break;
 	}
 	case PACKET_TYPE::UPDATELOCATION:
@@ -215,8 +200,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		APlayerCharacter* User = PlayerList[packet.userID];
 		NewPosition.Y = *(float*)packet.body;
 		NewPosition.Z = *(float*)(packet.body + 4);
-		User->NewDir = *(packet.body + 8);
-		User->UpdateLocation(NewPosition);
+		User->UpdateLocation(NewPosition, (uint8)*(char*)(packet.body + 8));
 		break;
 	}
 	case PACKET_TYPE::UPDATESTATE:
@@ -239,8 +223,12 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			case (char)ECharacterAction::EA_StopAttack:
 				User->StopAttack();
 				break;
+			case (char)ECharacterAction::EA_Die:
+				User->Destroy();
+				break;
 			}
 		}
+		break;
 	}
 	case PACKET_TYPE::LOGOUT:
 	{
@@ -267,21 +255,22 @@ void UBigNantoGameInstance::NameCheck(FString UserName, uint8 ClassType)
 {
 	MyName = UserName + '\0';
 	MyClassType = ClassType;
+	UE_LOG(LogTemp, Error, TEXT("Namecheck on"));
+
 	SendMessage(PACKET_TYPE::NAMECHECK, TCHAR_TO_ANSI(*UserName), UserName.Len());
 }
 
-int UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort)
+bool UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort)
 {
 	ConnectionSocket = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateSocket(NAME_Stream, TEXT("TCP"), false);
 	if (!ConnectionSocket) {
 		UE_LOG(LogTemp, Error, TEXT("Cannot create socket."));
-		return -1;
+		return false;
 	}
 	UE_LOG(LogTemp, Log, TEXT("PlayerController Name : %s"), *PlayerController->GetName());
 
 	UE_LOG(LogTemp, Log, TEXT("ServerIP = %s"), *ServerIP);
 	UE_LOG(LogTemp, Log, TEXT("ServerPort = %d"), ServerPort);
-	
 
 	TSharedRef<FInternetAddr> RemoteAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	FIPv4Address address;
@@ -293,18 +282,14 @@ int UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort)
 	if (ConnectionSocket->Connect(*RemoteAddress))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Connection done."));
-
-		return 1;
 		// 틱 돌아가기 시작
 		TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UBigNantoGameInstance::Tick));
+
+		return true;
 	}
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Red, FString::Printf(TEXT("Connection Failed")));
-		return -1;
+		return false;
 	}
-
-	// 게임 입장 패킷 전송
-	//char empty[1] = "" ;
-	//SendMessage(PACKET_TYPE::ENTER, empty, 1);
 }

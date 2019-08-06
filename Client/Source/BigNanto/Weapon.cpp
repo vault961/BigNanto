@@ -13,7 +13,7 @@ AWeapon::AWeapon()
 	BaseCollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BaseBoxComponent"));
 	
 	RootComponent = WeaponMesh;
-	BaseCollisionComponent->AttachTo(WeaponMesh);
+	BaseCollisionComponent->SetupAttachment(WeaponMesh);
 
 	WeaponMesh->SetCollisionProfileName(TEXT("NoCollision"));
 	BaseCollisionComponent->SetCollisionProfileName(TEXT("OverlapAllDynamic"));

@@ -30,8 +30,8 @@ enum class ECharacterAction : uint8
 	EA_Hit,
 	EA_Jump,
 	EA_SpecialAbility,
+	EA_Die,
 };
-
 
 // 캐릭터 직업
 UENUM()
@@ -65,7 +65,7 @@ public:
 	class UCameraComponent* SideViewCameraComponent;
 
 	// 캐릭터 상태 UI (데미지퍼센트, 플레이어 네임 표시)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	class UWidgetComponent* PlayerUI;
 
 	// 플레이어 이름
@@ -115,8 +115,8 @@ public:
 	char anibody[50];
 	bool IsMine;
 	char Name[NAMELEN];
-	char NewDir;
-	char PlayerDir;
+	uint8 NewDir;
+	uint8 PlayerDir;
 
 	uint8 MyID;
 
@@ -130,7 +130,7 @@ public:
 	FRotator UpdatedRotation;
 
 	UFUNCTION()
-	void UpdateLocation(FVector New);
+	void UpdateLocation(FVector New, uint8 Dir);
 	UFUNCTION()
 	void UpdateStatus();
 

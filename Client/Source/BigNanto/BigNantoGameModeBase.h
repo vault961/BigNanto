@@ -19,6 +19,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UUserWidget> LoginWidgetClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<UUserWidget> CharacterMakeWidgetClass;
 
 	UPROPERTY()
 	UUserWidget* CurrentWidget;
@@ -31,5 +34,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ChangeWidget(TSubclassOf<UUserWidget> NewWidegtClass);
+
+	UFUNCTION(BlueprintCallable)
+	void RemoveAllWidget();
 
 };

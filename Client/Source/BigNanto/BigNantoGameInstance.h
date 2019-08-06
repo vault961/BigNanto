@@ -78,13 +78,11 @@ public:
 	UPROPERTY()
 	class ACharacterSpawner* CharacterSpawner;
 	UPROPERTY()
-	class ACenterViewCamera* CenterViewActor;
-	UPROPERTY()
-	//class ABigNantoPlayerController* PlayerController;
+	class ACenterViewPawn* CenterViewPawn;
 	
 	class APlayerCharacter* PlayerList[280];
-	class APlayerCharacter* MyCharacter;
 	class APlayerController* PlayerController;
+	class ABigNantoGameModeBase* GameModeBase;
 	FVector NewPosition;
 
 	// 패킷 전송 함수
@@ -98,7 +96,7 @@ public:
 	int MakeLoginBuf(char * source, char cls, float Y, float Z, float damage, char * name, int namelen);
 	// 플레이어 입장
 	UFUNCTION(BlueprintCallable)
-	int EnterGame(FString ServerIP, int32 ServerPort);
+	bool EnterGame(FString ServerIP, int32 ServerPort);
 
 	UFUNCTION(BlueprintCallable)
 	void NameCheck(FString UserName, uint8 ClassType);

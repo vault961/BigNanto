@@ -18,7 +18,8 @@
 #include "Weapon_MagicWand.h"
 #include "BigNantoGameInstance.h"
 #include "CharacterSpawner.h"
-#include "CenterViewCamera.h"
+#include "CenterViewPawn.h"
+#include "Components/WidgetComponent.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -70,6 +71,8 @@ APlayerCharacter::APlayerCharacter()
 	CurrentState = ECharacterState::EIdle;
 	JumpCount = 0;
 	LifeCount = 0;
+	NewDir = 0;
+	PlayerDir = 0;
 	CharacterClass = ECharacterClass::EUnknown;
 
 	// 히트 파티클
@@ -77,12 +80,19 @@ APlayerCharacter::APlayerCharacter()
 	if (HitParticleAsset.Succeeded())
 		HitParticle = HitParticleAsset.Object;
 
-	//static ConstructorHelpers::FObjectFinder<UParticleSystem> HitParticleAsset(TEXT("/Game/StarterContent/Particles/P_Explosion"));
+	PlayerUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerUI"));
+	static ConstructorHelpers::FClassFinder<UUserWidget> PlayerUIAsset(TEXT("/Game/UMG/PlayerFloatingUI"));
+	if (PlayerUIAsset.Succeeded())
+		PlayerUI->SetWidgetClass(PlayerUIAsset.Class);
+
+	PlayerUI->SetupAttachment(RootComponent);
+	PlayerUI->RelativeLocation = FVector(0.f, 0.f, 150.f);
+	PlayerUI->SetWidgetSpace(EWidgetSpace::Screen);
 }
 
 APlayerCharacter::~APlayerCharacter()
 {
-	UE_LOG(LogTemp, Log, TEXT("캐릭터 소멸자 호출"));
+	UE_LOG(LogTemp, Log, TEXT("플레이어 '%s' 소멸자 호출"), *PlayerName);
 }
 
 void APlayerCharacter::BeginPlay()
@@ -204,10 +214,11 @@ void APlayerCharacter::SetCurrentState(ECharacterState NewState)
 	CurrentState = NewState;
 }
 
-void APlayerCharacter::UpdateLocation(FVector New)
+void APlayerCharacter::UpdateLocation(FVector New, uint8 Dir)
 {
 	NewLocation = New;
-	//UE_LOG(LogTemp, Log, TEXT("%f, %f"), NewLocation.Y, NewLocation.Z);
+	NewDir = Dir;
+	UE_LOG(LogTemp, Log, TEXT("PosY : %f, PosZ : %f"), NewLocation.Y, NewLocation.Z);
 }
 
 void APlayerCharacter::UpdateStatus()
@@ -288,12 +299,6 @@ void APlayerCharacter::MoveRight(float val)
 			
 		// 입력받은 방향으로 이동
 		AddMovementInput(FVector(0.f, -1.f, 0.f), val);
-		
-		//if (val != lastval) {
-			
-		//}
-
-		//lastval = val;
 	}
 }
 
@@ -341,16 +346,15 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	if (IsMine)
 	{
 		anibody[0] = (char)ECharacterAction::EA_Hit;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
+		//GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
 
 		// 데미지 퍼센트에 히트 데미지 추가
 		DamagePercent += HitDamage;
 
-		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, sizeof(float));
+		//GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, sizeof(float));
 
 		// 공격 받은 방향으로 넉백
 		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
-
 	}
 
 	// 현재행동 중단하고 EHit 상태로 바꿔주기
@@ -408,15 +412,16 @@ void APlayerCharacter::StopSpecialAbility()
 
 void APlayerCharacter::Die()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("끄앙 쥬금"));
-	//GetCharacterMovement()->GravityScale = 0.f;
-	//GetCapsuleComponent()->SetSimulatePhysics(false);
-	/*Weapon->WeaponOwner = nullptr;
-	GameInstance->MyCharacter = nullptr;
-	GameInstance->PlayerList[MyID] = nullptr;*/
-	//AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewActor->CameraComponent);
-	//GameInstance->PlayerController->SetViewTargetWithBlend(CenterViewCamera);
-	//Destroy();
+	GEngine->AddOnScreenDebugMessage(0, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"));
+	if (IsMine)
+	{
+		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
+		GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
+		anibody[0] = (char)ECharacterAction::EA_Die;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
+		Destroy();
+	}
+
 	//FVector RespawnLocation = GameInstance->CharacterSpawner->GetRandomPointInVolume();
 	//GameInstance->CharacterSpawner->SpawnCharacter(1, RespawnLocation.Y, RespawnLocation.Z, DamagePercent, true);
 }
