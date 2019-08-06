@@ -259,8 +259,7 @@ int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float 
 	DataAddCopy(source, &Y, sizeof(float), sum);
 	DataAddCopy(source, &Z, sizeof(float), sum);
 	DataAddCopy(source, &damage, sizeof(float), sum);
-	DataAddCopy(source, &name, namelen, sum);
-
+	DataAddCopy(source, name, namelen, sum);
 	return sum;
 }
 
