@@ -121,22 +121,27 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	FVector none;
 
 	switch (packet.type) {
-	case PACKET_TYPE::ENTER:
+	case PACKET_TYPE::NAMECHECK:
 	{
-		// 내 ID 받기
-		MyID = packet.userID;
+		if (packet.body[0] == 0) { // 중복된 이름없을 때
+			// 내 ID 받기
+			MyID = packet.userID;
 
-		// 랜덤한 위치에 소환하기 위해 랜덤벡터 생성
-		FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
+			// 랜덤한 위치에 소환하기 위해 랜덤벡터 생성
+			FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
 
-		// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
-		char buf[30];
-		
-		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_ANSI(*MyName), MyName.Len());
-		UE_LOG(LogTemp, Warning, TEXT("%s"), MyName.GetCharArray().GetData());
+			// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
+			char buf[30];
 
-		// 서버에게 내 캐릭터 요청
-		SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);
+			int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_ANSI(*MyName), MyName.Len());
+			UE_LOG(LogTemp, Warning, TEXT("%s"), MyName.GetCharArray().GetData());
+
+			// 서버에게 내 캐릭터 요청
+			SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);
+		}
+		else { // 중복된 이름 있을 때
+
+		}
 		break;
 	}
 	case PACKET_TYPE::PLAYERSPAWN:
@@ -214,12 +219,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		User->UpdateLocation(NewPosition);
 		break;
 	}
-	case PACKET_TYPE::UPDATEDMG:
-	{
-		APlayerCharacter* User = PlayerList[packet.userID];
-		User->DamagePercent = *(float*)(packet.body);
-		break;
-	}
 	case PACKET_TYPE::UPDATESTATE:
 	{
 		if (packet.userID != MyID) {
@@ -231,10 +230,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			case (char)ECharacterAction::EA_Defend:
 				break;
 			case (char)ECharacterAction::EA_DefendHit:
-				//User->AnimInstance->PlayDefendHit();
 				break;
 			case (char)ECharacterAction::EA_Hit:
-				//User->HitandKnockback(none, 0);
 				break;
 			case (char)ECharacterAction::EA_Jump:
 				User->DoJump();
@@ -259,22 +256,26 @@ int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float 
 	return sum;
 }
 
-void UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort, FString UserName, uint8 ClassType)
+
+void UBigNantoGameInstance::NameCheck(FString UserName, uint8 ClassType)
+{
+	MyName = UserName + '\0';
+	MyClassType = ClassType;
+	SendMessage(PACKET_TYPE::NAMECHECK, TCHAR_TO_ANSI(*UserName), UserName.Len());
+}
+
+int UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort)
 {
 	ConnectionSocket = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateSocket(NAME_Stream, TEXT("TCP"), false);
 	if (!ConnectionSocket) {
 		UE_LOG(LogTemp, Error, TEXT("Cannot create socket."));
-		return;
+		return -1;
 	}
 	UE_LOG(LogTemp, Log, TEXT("PlayerController Name : %s"), *PlayerController->GetName());
 
 	UE_LOG(LogTemp, Log, TEXT("ServerIP = %s"), *ServerIP);
 	UE_LOG(LogTemp, Log, TEXT("ServerPort = %d"), ServerPort);
-	UE_LOG(LogTemp, Log, TEXT("UserName = %s"), *UserName);
-	UE_LOG(LogTemp, Log, TEXT("ClassType = %d"), ClassType);
-
-	MyName = UserName + '\0';
-	MyClassType = ClassType;
+	
 
 	TSharedRef<FInternetAddr> RemoteAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
 	FIPv4Address address;
@@ -287,16 +288,17 @@ void UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort, FStrin
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Connection done."));
 
+		return 1;
 		// 틱 돌아가기 시작
 		TickDelegateHandle = FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UBigNantoGameInstance::Tick));
 	}
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Red, FString::Printf(TEXT("Connection Failed")));
-		return;
+		return -1;
 	}
 
 	// 게임 입장 패킷 전송
-	char empty[1] = "" ;
-	SendMessage(PACKET_TYPE::ENTER, empty, 1);
+	//char empty[1] = "" ;
+	//SendMessage(PACKET_TYPE::ENTER, empty, 1);
 }

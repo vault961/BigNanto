@@ -105,7 +105,33 @@ void EnterProcess(User& myuser, shared_ptr<Packet>& temppacket) {
 	SentInfo temp(temppacket);
 	myuser.PushAndSend(temp);
 }
+void NameCheckProcess(User& myuser, shared_ptr<Packet>& temppacket) {
+	char ReqName[30]{ 0 };
+	bool isthere = false;
+	memcpy(ReqName, temppacket.get()->Body + FRONTLEN, temppacket.get()->Len-FRONTLEN);
+	
+	UserMapLock.ReadLock();
+	for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
+		if (strcmp(ReqName, it->second->Name) == 0) {
+			isthere = true;
+			break;
+		}
+	}
+	UserMapLock.ReadUnLock();
 
+
+	if (isthere) {
+		temppacket.get()->Body[0] = 1;
+	}
+	else {
+		printf("welcome!");
+		temppacket.get()->Body[0] = 0;
+	}
+
+	temppacket.get()->Len = FRONTLEN + 1;
+	SentInfo temp(temppacket);
+	myuser.PushAndSend(temp);
+}
 
 void RecvProcess(char * source, int retValue, User& myuser) {
 	char * receiveBuffer = myuser.ClientSocket.ReceiveBuffer;
@@ -143,6 +169,11 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 			break;
 		case PACKET_TYPE::UPDATEDMG:
 			myuser.Damage = *(float*)(temppacket.get()->Body + FRONTLEN);
+			return;
+			break;
+		case PACKET_TYPE::NAMECHECK:
+			NameCheckProcess(myuser, temppacket);
+			return;
 			break;
 		}
 		
