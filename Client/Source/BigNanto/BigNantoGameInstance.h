@@ -93,13 +93,16 @@ public:
 	void PacketProcess(Packet& packet);
 
 	// 로그인 버퍼 생성 함수
-	int MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, TCHAR * name, int namelen);
+	int MakeLoginBuf(char * source, char cls, float Y, float Z, float damage, char * name, int namelen);
 	// 플레이어 입장
 	UFUNCTION(BlueprintCallable)
 	void EnterGame(FString ServerIP, int32 ServerPort, FString UserName, uint8 ClassType);
 
 	// 패킷 만들때 편하게
-
 	template <typename T>
 	void DataAddCopy(char * source, T* get, int size, int& sum);
+
+	template <typename T>
+	void DataAddGet(T* source, char* get, int size, int& sum);
+
 };

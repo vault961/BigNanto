@@ -117,6 +117,9 @@ public:
 	char anibody[50];
 	bool IsMine;
 	char Name[NAMELEN];
+	char NewDir;
+	char PlayerDir;
+
 	uint8 MyID;
 
 	FVector NewLocation;

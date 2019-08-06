@@ -179,15 +179,17 @@ public:
 		PosY = 0;
 		PosZ = 0;
 		Damage = 0;
+		Dir = 0;
 		ClientSocket.ReceivedBufferSize = 0;
 	}
 	ClientSocket ClientSocket;
 	char Name[30];
 	char CharacterClass;
-	int Damage;
+	float Damage;
 	float PosY;
 	float PosZ;
-	
+	char Dir;
+
 	void SendFront(Sender* overlapped);
 	void PushAndSend(SentInfo& temp);
 	void GetOthersInfo();

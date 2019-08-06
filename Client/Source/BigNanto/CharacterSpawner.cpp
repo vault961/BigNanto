@@ -65,7 +65,7 @@ FVector ACharacterSpawner::GetRandomPointInVolume()
 	return RandomLocation;
 }
 
-APlayerCharacter* ACharacterSpawner::SpawnCharacter(char CharacterClass, float PosY, float PosZ, int Damage, bool bIsMine)
+APlayerCharacter* ACharacterSpawner::SpawnCharacter(char CharacterClass, float PosY, float PosZ, float Damage, bool bIsMine)
 {
 	// 월드 체크
 	UWorld* const World = GetWorld();
@@ -92,6 +92,7 @@ APlayerCharacter* ACharacterSpawner::SpawnCharacter(char CharacterClass, float P
 			return nullptr;
 
 		Character->IsMine = bIsMine;
+		Character->DamagePercent = Damage;
 		Character->FinishSpawning(SpawnTransform);
 		return Character;
 	}
