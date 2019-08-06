@@ -173,7 +173,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			memcpy(MyCharacter->Name, PlayerName, NameLen);
 			MyCharacter->Name[NameLen] = '\0';
 
-			char NameArray[20];
+			char NameArray[100];
 			memcpy(NameArray, PlayerName, NameLen);
 			MyCharacter->PlayerName = FString(UTF8_TO_TCHAR(NameArray));
 			MyCharacter->MyID = MyID;
@@ -231,10 +231,10 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			case (char)ECharacterAction::EA_Defend:
 				break;
 			case (char)ECharacterAction::EA_DefendHit:
-				User->AnimInstance->PlayDefendHit();
+				//User->AnimInstance->PlayDefendHit();
 				break;
 			case (char)ECharacterAction::EA_Hit:
-				User->HitandKnockback(none, 0);
+				//User->HitandKnockback(none, 0);
 				break;
 			case (char)ECharacterAction::EA_Jump:
 				User->DoJump();

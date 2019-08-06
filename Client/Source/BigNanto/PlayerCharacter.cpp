@@ -207,7 +207,7 @@ void APlayerCharacter::SetCurrentState(ECharacterState NewState)
 void APlayerCharacter::UpdateLocation(FVector New)
 {
 	NewLocation = New;
-	UE_LOG(LogTemp, Log, TEXT("%f, %f"), NewLocation.Y, NewLocation.Z);
+	//UE_LOG(LogTemp, Log, TEXT("%f, %f"), NewLocation.Y, NewLocation.Z);
 }
 
 void APlayerCharacter::UpdateStatus()
@@ -346,7 +346,7 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 		// 데미지 퍼센트에 히트 데미지 추가
 		DamagePercent += HitDamage;
 
-		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, sizeof(float));
+		//GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, sizeof(float));
 
 		// 공격 받은 방향으로 넉백
 		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
