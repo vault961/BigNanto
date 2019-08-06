@@ -345,16 +345,14 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	// 나 일경우 Hit 애니메이션 전송, hit damage 처리
 	if (IsMine)
 	{
-		anibody[0] = (char)ECharacterAction::EA_Hit;
-		//GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
-
 		// 데미지 퍼센트에 히트 데미지 추가
 		DamagePercent += HitDamage;
 
-		//GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, sizeof(float));
-
 		// 공격 받은 방향으로 넉백
 		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
+
+		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
+
 	}
 
 	// 현재행동 중단하고 EHit 상태로 바꿔주기
