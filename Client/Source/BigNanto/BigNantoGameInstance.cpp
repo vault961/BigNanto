@@ -71,6 +71,12 @@ void UBigNantoGameInstance::DataAddCopy(char * source, T* get, int size, int& su
 	memcpy(source + sum, get, size);
 	sum += size;
 }
+template <typename T>
+void UBigNantoGameInstance::DataAddGet(T* source, char* get, int size, int& sum) {
+	memcpy(source, get + sum, size);
+	sum += size;
+}
+
 
 void UBigNantoGameInstance::PacketHandler()
 {
@@ -125,7 +131,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 
 		// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
 		char buf[30];
-		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, (char*)MyName.GetCharArray().GetData(), MyName.Len());
+		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_ANSI(*MyName), MyName.Len());
 
 		// 서버에게 내 캐릭터 요청
 		SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);
@@ -133,12 +139,22 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::PLAYERSPAWN:
 	{
-		char CharacterClass = packet.body[0];
-		float PosY = *(float*)(packet.body + sizeof(char));
-		float PosZ = *(float*)(packet.body + sizeof(char) + sizeof(float));
-		float DamagePercent = *(float*)(packet.body + sizeof(float) * 2 + sizeof(char));
-		uint8* CharacterName = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
-		int NameLen = packet.len - sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t) - FRONTLEN;
+		int sum = 0;
+		char * source = (char*)packet.body;
+		
+		char CharacterClass;
+		float PosY;
+		float PosZ;
+		float DamagePercent;
+		uint8 CharacterName[30];
+
+		DataAddGet(&CharacterClass, source, sizeof(char), sum);
+		DataAddGet(&PosY, source, sizeof(float), sum);
+		DataAddGet(&PosZ, source, sizeof(float), sum);
+		DataAddGet(&DamagePercent, source, sizeof(float), sum);
+
+		int NameLen = packet.len - sum - FRONTLEN;
+		DataAddGet(CharacterName, source, NameLen, sum);
 
 		// 패킷 ID와 내 ID 비교
 		// 내 캐릭터 스폰
