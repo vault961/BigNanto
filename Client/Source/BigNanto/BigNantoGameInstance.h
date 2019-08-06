@@ -21,6 +21,8 @@ enum class PACKET_TYPE {
 	UPDATELOCATION,
 	UPDATEDMG,
 	UPDATESTATE,
+	NAMECHECK,
+	LOGOUT,
 };
 
 class Packet {
@@ -94,7 +96,10 @@ public:
 	int MakeLoginBuf(char * source, char cls, float Y, float Z, float damage, char * name, int namelen);
 	// 플레이어 입장
 	UFUNCTION(BlueprintCallable)
-	void EnterGame(FString ServerIP, int32 ServerPort, FString UserName, uint8 ClassType);
+	int EnterGame(FString ServerIP, int32 ServerPort);
+
+	UFUNCTION(BlueprintCallable)
+	void NameCheck(FString UserName, uint8 ClassType);
 
 	// 패킷 만들때 편하게
 	template <typename T>
