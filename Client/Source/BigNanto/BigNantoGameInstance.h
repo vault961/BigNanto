@@ -22,6 +22,7 @@ enum class PACKET_TYPE {
 	UPDATEDMG,
 	UPDATESTATE,
 	NAMECHECK,
+	LOGOUT,
 };
 
 class Packet {

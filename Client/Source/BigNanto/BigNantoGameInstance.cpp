@@ -242,7 +242,13 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			}
 		}
 	}
-	
+	case PACKET_TYPE::LOGOUT:
+	{
+		APlayerCharacter* User = PlayerList[packet.userID];
+		User->Destroy();
+		PlayerList[packet.userID] = NULL;
+		break;
+	}
 	}
 }
 

@@ -36,6 +36,7 @@ enum class PACKET_TYPE {
 	UPDATEDMG,
 	UPDATESTATE,
 	NAMECHECK,
+	LOGOUT,
 };
 typedef struct _PER_HANDLE_DATA {
 	SOCKET Socket;

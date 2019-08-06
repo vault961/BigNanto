@@ -41,6 +41,14 @@ unsigned int __stdcall ServerWorkerThread(LPVOID CompletionPortID) {
 	while (1) {
 		ret = GetQueuedCompletionStatus(CompletionPort, &BytesTransferred, (LPDWORD)&PerHandleData, (LPOVERLAPPED*)&RecvData, INFINITE);
 		if (BytesTransferred == 0) {
+			char empty[1]{ 0 };
+			auto temppacket = make_shared<Packet>(PACKET_TYPE::LOGOUT, FRONTLEN+1, PerHandleData->Socket, empty);
+			SentInfo temp(temppacket);
+			// broadcast
+			g_OrderQueue.Push(temp);
+			SetEvent(OrderQueueEvent);
+
+
 			//close socket
 			printf("close!");
 			closesocket(PerHandleData->Socket);
