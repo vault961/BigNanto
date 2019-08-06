@@ -19,6 +19,7 @@
 #include "BigNantoGameInstance.h"
 #include "CharacterSpawner.h"
 #include "CenterViewCamera.h"
+#include "Components/WidgetComponent.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -77,7 +78,14 @@ APlayerCharacter::APlayerCharacter()
 	if (HitParticleAsset.Succeeded())
 		HitParticle = HitParticleAsset.Object;
 
-	//static ConstructorHelpers::FObjectFinder<UParticleSystem> HitParticleAsset(TEXT("/Game/StarterContent/Particles/P_Explosion"));
+	PlayerUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerUI"));
+	static ConstructorHelpers::FClassFinder<UUserWidget> PlayerUIAsset(TEXT("/Game/UMG/PlayerFloatingUI"));
+	if (PlayerUIAsset.Succeeded())
+		PlayerUI->SetWidgetClass(PlayerUIAsset.Class);
+
+	PlayerUI->SetupAttachment(RootComponent);
+	PlayerUI->RelativeLocation = FVector(0.f, 0.f, 150.f);
+	PlayerUI->SetWidgetSpace(EWidgetSpace::Screen);
 }
 
 APlayerCharacter::~APlayerCharacter()
@@ -207,7 +215,7 @@ void APlayerCharacter::SetCurrentState(ECharacterState NewState)
 void APlayerCharacter::UpdateLocation(FVector New)
 {
 	NewLocation = New;
-	UE_LOG(LogTemp, Log, TEXT("%f, %f"), NewLocation.Y, NewLocation.Z);
+	//UE_LOG(LogTemp, Log, TEXT("PosY : %f, PosZ : %f"), NewLocation.Y, NewLocation.Z);
 }
 
 void APlayerCharacter::UpdateStatus()
@@ -350,7 +358,6 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 
 		// 공격 받은 방향으로 넉백
 		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
-
 	}
 
 	// 현재행동 중단하고 EHit 상태로 바꿔주기

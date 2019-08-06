@@ -65,7 +65,7 @@ public:
 	class UCameraComponent* SideViewCameraComponent;
 
 	// 캐릭터 상태 UI (데미지퍼센트, 플레이어 네임 표시)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	class UWidgetComponent* PlayerUI;
 
 	// 플레이어 이름

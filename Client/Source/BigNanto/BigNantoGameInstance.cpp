@@ -194,7 +194,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				UE_LOG(LogTemp, Error, TEXT("내 캐릭터를 정상적으로 스폰할 수 없습니다"));
 				return;
 			}
-			//float movespeed = Character->GetVelocity().Size();
 			PlayerList[packet.userID] = Character;
 
 			memcpy(Character->Name, PlayerName, NameLen);
