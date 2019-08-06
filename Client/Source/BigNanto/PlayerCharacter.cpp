@@ -18,7 +18,7 @@
 #include "Weapon_MagicWand.h"
 #include "BigNantoGameInstance.h"
 #include "CharacterSpawner.h"
-#include "CenterViewCamera.h"
+#include "CenterViewPawn.h"
 #include "Components/WidgetComponent.h"
 
 // Sets default values
@@ -90,7 +90,7 @@ APlayerCharacter::APlayerCharacter()
 
 APlayerCharacter::~APlayerCharacter()
 {
-	UE_LOG(LogTemp, Log, TEXT("캐릭터 소멸자 호출"));
+	UE_LOG(LogTemp, Log, TEXT("플레이어 '%s' 소멸자 호출"), *PlayerName);
 }
 
 void APlayerCharacter::BeginPlay()
@@ -354,7 +354,7 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 		// 데미지 퍼센트에 히트 데미지 추가
 		DamagePercent += HitDamage;
 
-		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, sizeof(float));
+		//GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, sizeof(float));
 
 		// 공격 받은 방향으로 넉백
 		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
@@ -415,15 +415,14 @@ void APlayerCharacter::StopSpecialAbility()
 
 void APlayerCharacter::Die()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("끄앙 쥬금"));
-	//GetCharacterMovement()->GravityScale = 0.f;
-	//GetCapsuleComponent()->SetSimulatePhysics(false);
-	/*Weapon->WeaponOwner = nullptr;
-	GameInstance->MyCharacter = nullptr;
-	GameInstance->PlayerList[MyID] = nullptr;*/
-	//AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewActor->CameraComponent);
-	//GameInstance->PlayerController->SetViewTargetWithBlend(CenterViewCamera);
-	//Destroy();
+	if (IsMine)
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("플레이어 '%s' 사망"), *PlayerName);
+		GEngine->AddOnScreenDebugMessage(0, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"));
+		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
+		GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
+	}
+	Destroy();
 	//FVector RespawnLocation = GameInstance->CharacterSpawner->GetRandomPointInVolume();
 	//GameInstance->CharacterSpawner->SpawnCharacter(1, RespawnLocation.Y, RespawnLocation.Z, DamagePercent, true);
 }

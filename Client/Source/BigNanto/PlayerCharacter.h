@@ -32,7 +32,6 @@ enum class ECharacterAction : uint8
 	EA_SpecialAbility,
 };
 
-
 // 캐릭터 직업
 UENUM()
 enum class ECharacterClass : uint8

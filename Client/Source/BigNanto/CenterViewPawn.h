@@ -3,23 +3,23 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
-#include "CenterViewCamera.generated.h"
+#include "GameFramework/Pawn.h"
+#include "CenterViewPawn.generated.h"
 
 UCLASS()
-class BIGNANTO_API ACenterViewCamera : public AActor
+class BIGNANTO_API ACenterViewPawn : public APawn
 {
 	GENERATED_BODY()
-	
-public:	
-	// Sets default values for this actor's properties
-	ACenterViewCamera();
+
+public:
+	// Sets default values for this pawn's properties
+	ACenterViewPawn();
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class USpringArmComponent* CameraBoom;

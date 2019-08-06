@@ -76,12 +76,10 @@ public:
 	UPROPERTY()
 	class ACharacterSpawner* CharacterSpawner;
 	UPROPERTY()
-	class ACenterViewCamera* CenterViewActor;
-	UPROPERTY()
-	//class ABigNantoPlayerController* PlayerController;
+	class ACenterViewPawn* CenterViewPawn;
 	
 	class APlayerCharacter* PlayerList[280];
-	class APlayerCharacter* MyCharacter;
+	//class APlayerCharacter* MyCharacter;
 	class APlayerController* PlayerController;
 	FVector NewPosition;
 

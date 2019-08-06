@@ -11,7 +11,6 @@
 #include "CharacterSpawner.h"
 #include "UObject/ConstructorHelpers.h"
 #include "PlayerCharacterAnim.h"
-#include "CenterViewCamera.h"
 #include "BigNantoPlayerController.h"
 
 //#pragma comment (lib, "Ws2_32.lib")
@@ -158,50 +157,33 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		int NameLen = packet.len - sum - FRONTLEN;
 		DataAddGet(PlayerName, source, NameLen, sum);
 
+		APlayerCharacter* Character;
+
 		// 패킷 ID와 내 ID 비교
 		// 내 캐릭터 스폰
 		if (packet.userID == MyID)
 		{
-			MyCharacter = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
-			if (nullptr == MyCharacter)
-			{
-				UE_LOG(LogTemp, Error, TEXT("내 캐릭터를 정상적으로 스폰할 수 없습니다"));
-				return;
-			}
-			PlayerList[packet.userID] = MyCharacter;
-
-			memcpy(MyCharacter->Name, PlayerName, NameLen);
-			MyCharacter->Name[NameLen] = '\0';
-
-			char NameArray[20];
-			memcpy(NameArray, PlayerName, NameLen);
-			MyCharacter->PlayerName = FString(UTF8_TO_TCHAR(NameArray));
-			MyCharacter->MyID = MyID;
+			Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
 
 			if (nullptr == PlayerController)
 				PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-			PlayerController->Possess(MyCharacter);
-
-			CurrentUserNum++;
-			UE_LOG(LogTemp, Warning, TEXT("myuser login"));
+			PlayerController->Possess(Character);
+			Character->MyID = MyID;
 		}
 		// 다른 캐릭터들 스폰
 		else
 		{
-			APlayerCharacter* Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, false);
-			if (nullptr == Character)
-			{
-				UE_LOG(LogTemp, Error, TEXT("내 캐릭터를 정상적으로 스폰할 수 없습니다"));
-				return;
-			}
-			PlayerList[packet.userID] = Character;
-
-			memcpy(Character->Name, PlayerName, NameLen);
-			Character->Name[NameLen] = '\0';
-
-			CurrentUserNum++;
-			UE_LOG(LogTemp, Warning, TEXT("other user login"));
+			Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, false);
 		}
+
+		if (nullptr == Character)
+		{
+			UE_LOG(LogTemp, Error, TEXT("내 캐릭터를 정상적으로 스폰할 수 없습니다"));
+			return;
+		}
+
+		PlayerList[packet.userID] = Character;
+		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName));
 		break;
 	}
 	case PACKET_TYPE::UPDATELOCATION:
@@ -230,10 +212,10 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			case (char)ECharacterAction::EA_Defend:
 				break;
 			case (char)ECharacterAction::EA_DefendHit:
-				User->AnimInstance->PlayDefendHit();
+				//User->AnimInstance->PlayDefendHit();
 				break;
 			case (char)ECharacterAction::EA_Hit:
-				User->HitandKnockback(none, 0);
+				//User->HitandKnockback(none, 0);
 				break;
 			case (char)ECharacterAction::EA_Jump:
 				User->DoJump();
