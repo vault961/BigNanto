@@ -71,6 +71,8 @@ APlayerCharacter::APlayerCharacter()
 	CurrentState = ECharacterState::EIdle;
 	JumpCount = 0;
 	LifeCount = 0;
+	NewDir = 0;
+	PlayerDir = 0;
 	CharacterClass = ECharacterClass::EUnknown;
 
 	// 히트 파티클
@@ -212,10 +214,11 @@ void APlayerCharacter::SetCurrentState(ECharacterState NewState)
 	CurrentState = NewState;
 }
 
-void APlayerCharacter::UpdateLocation(FVector New)
+void APlayerCharacter::UpdateLocation(FVector New, uint8 Dir)
 {
 	NewLocation = New;
-	//UE_LOG(LogTemp, Log, TEXT("PosY : %f, PosZ : %f"), NewLocation.Y, NewLocation.Z);
+	NewDir = Dir;
+	UE_LOG(LogTemp, Log, TEXT("PosY : %f, PosZ : %f"), NewLocation.Y, NewLocation.Z);
 }
 
 void APlayerCharacter::UpdateStatus()
@@ -296,12 +299,6 @@ void APlayerCharacter::MoveRight(float val)
 			
 		// 입력받은 방향으로 이동
 		AddMovementInput(FVector(0.f, -1.f, 0.f), val);
-		
-		//if (val != lastval) {
-			
-		//}
-
-		//lastval = val;
 	}
 }
 
@@ -349,12 +346,12 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	if (IsMine)
 	{
 		anibody[0] = (char)ECharacterAction::EA_Hit;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
+		//GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
 
 		// 데미지 퍼센트에 히트 데미지 추가
 		DamagePercent += HitDamage;
 
-		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, sizeof(float));
+		//GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, sizeof(float));
 
 		// 공격 받은 방향으로 넉백
 		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
@@ -415,14 +412,16 @@ void APlayerCharacter::StopSpecialAbility()
 
 void APlayerCharacter::Die()
 {
+	GEngine->AddOnScreenDebugMessage(0, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"));
 	if (IsMine)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("플레이어 '%s' 사망"), *PlayerName);
-		GEngine->AddOnScreenDebugMessage(0, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"));
 		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
 		GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
+		anibody[0] = (char)ECharacterAction::EA_Die;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
+		Destroy();
 	}
-	Destroy();
+
 	//FVector RespawnLocation = GameInstance->CharacterSpawner->GetRandomPointInVolume();
 	//GameInstance->CharacterSpawner->SpawnCharacter(1, RespawnLocation.Y, RespawnLocation.Z, DamagePercent, true);
 }

@@ -7,16 +7,20 @@
 #include "BigNantoPlayerController.h"
 #include "PlayerCharacter.h"
 #include "UObject/ConstructorHelpers.h"
+#include "CenterViewPawn.h"
 
 ABigNantoGameModeBase::ABigNantoGameModeBase()
 {
-	DefaultPawnClass = AActor::StaticClass();
-	//GameStateClass = AInGameStateBase::StaticClass();
-	//HUDClass = AInGameHUD::StaticClass();
+	DefaultPawnClass = ACenterViewPawn::StaticClass();
 	PlayerControllerClass = ABigNantoPlayerController::StaticClass();
+
 	static ConstructorHelpers::FClassFinder<UUserWidget> LoginWidget(TEXT("/Game/UMG/LoginUI"));
 	if (LoginWidget.Succeeded())
 		LoginWidgetClass = LoginWidget.Class;
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> CharacterMakeWidget(TEXT("/Game/UMG/CharacterMakeUI"));
+	if (CharacterMakeWidget.Succeeded())
+		CharacterMakeWidgetClass = CharacterMakeWidget.Class;
 }
 
 void ABigNantoGameModeBase::BeginPlay()
@@ -26,6 +30,8 @@ void ABigNantoGameModeBase::BeginPlay()
 	GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());
 	if (nullptr == GameInstance)
 		return;
+
+	GameInstance->GameModeBase = this;
 
 	ChangeWidget(LoginWidgetClass);
 }
@@ -50,20 +56,13 @@ void ABigNantoGameModeBase::ChangeWidget(TSubclassOf<UUserWidget> NewWidegtClass
 	}
 }
 
-//void ABigNantoGameModeBase::SpawnCharacters()
-//{
-//	TArray<AActor*> FoundActors;
-//
-//	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacterSpawner::StaticClass(), FoundActors);
-//
-//	for (auto Actor : FoundActors)
-//	{
-//		ACharacterSpawner* SpawnActor = Cast<ACharacterSpawner>(Actor);
-//		if (SpawnActor)
-//		{
-//			//switch(TotalPlayers)
-//			
-//			GetWorld()->SpawnActor<APlayerCharacter>(Warrior.Get(), SpawnActor->GetActorLocation(), SpawnActor->GetActorRotation());
-//		}
-//	}
-//}
+void ABigNantoGameModeBase::RemoveAllWidget()
+{
+	if (CurrentWidget != nullptr)
+	{
+		CurrentWidget->RemoveFromViewport();
+		CurrentWidget = nullptr;
+		GameInstance->PlayerController->SetInputMode(FInputModeGameOnly());
+		GameInstance->PlayerController->bShowMouseCursor = false;
+	}
+}

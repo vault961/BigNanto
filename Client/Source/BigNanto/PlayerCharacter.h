@@ -30,6 +30,7 @@ enum class ECharacterAction : uint8
 	EA_Hit,
 	EA_Jump,
 	EA_SpecialAbility,
+	EA_Die,
 };
 
 // 캐릭터 직업
@@ -114,8 +115,8 @@ public:
 	char anibody[50];
 	bool IsMine;
 	char Name[NAMELEN];
-	char NewDir;
-	char PlayerDir;
+	uint8 NewDir;
+	uint8 PlayerDir;
 
 	uint8 MyID;
 
@@ -129,7 +130,7 @@ public:
 	FRotator UpdatedRotation;
 
 	UFUNCTION()
-	void UpdateLocation(FVector New);
+	void UpdateLocation(FVector New, uint8 Dir);
 	UFUNCTION()
 	void UpdateStatus();
 

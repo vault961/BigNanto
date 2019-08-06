@@ -105,10 +105,10 @@ void EnterProcess(User& myuser, shared_ptr<Packet>& temppacket) {
 	SentInfo temp(temppacket);
 	myuser.PushAndSend(temp);
 }
-void NameCheckProcess(User& myuser, shared_ptr<Packet>& temppacket) {
+void NameCheckProcess(User& myuser, char * Name, int NameLen) {
 	char ReqName[30]{ 0 };
 	bool isthere = false;
-	memcpy(ReqName, temppacket.get()->Body + FRONTLEN, temppacket.get()->Len-FRONTLEN);
+	memcpy(ReqName, Name, NameLen);
 	
 	UserMapLock.ReadLock();
 	for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
@@ -120,15 +120,18 @@ void NameCheckProcess(User& myuser, shared_ptr<Packet>& temppacket) {
 	UserMapLock.ReadUnLock();
 
 
+	
+	char buf[1];
 	if (isthere) {
-		temppacket.get()->Body[0] = 1;
+		printf("nonoononnoonzz");
+		buf[0] = 1;
 	}
 	else {
 		printf("welcome!");
-		temppacket.get()->Body[0] = 0;
+		buf[0] = 0;
 	}
 
-	temppacket.get()->Len = FRONTLEN + 1;
+	auto temppacket = make_shared<Packet>(PACKET_TYPE::NAMECHECK, FRONTLEN + 1, myuser.ClientSocket.Socket, buf);
 	SentInfo temp(temppacket);
 	myuser.PushAndSend(temp);
 }
@@ -172,7 +175,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 			return;
 			break;
 		case PACKET_TYPE::NAMECHECK:
-			NameCheckProcess(myuser, temppacket);
+			NameCheckProcess(myuser, temppacket.get()->Body+FRONTLEN, temppacket.get()->Len-FRONTLEN);
 			return;
 			break;
 		}
