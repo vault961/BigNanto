@@ -176,10 +176,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			char NameArray[20];
 			memcpy(NameArray, PlayerName, NameLen);
 			MyCharacter->PlayerName = FString(UTF8_TO_TCHAR(NameArray));
-			UE_LOG(LogTemp, Warning, TEXT("GameInstance Name = %s"), NameArray);
-			UE_LOG(LogTemp, Warning, TEXT("CharacterFString = %s"), *MyCharacter->PlayerName);
-			UE_LOG(LogTemp, Warning, TEXT("CharacterArrayName = %s"), MyCharacter->Name);
-
 			MyCharacter->MyID = MyID;
 
 			if (nullptr == PlayerController)
@@ -233,7 +229,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				User->Attack();
 				break;
 			case (char)ECharacterAction::EA_Defend:
-				User->DoJump();
 				break;
 			case (char)ECharacterAction::EA_DefendHit:
 				User->AnimInstance->PlayDefendHit();
@@ -242,6 +237,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				User->HitandKnockback(none, 0);
 				break;
 			case (char)ECharacterAction::EA_Jump:
+				User->DoJump();
 				break;
 			case (char)ECharacterAction::EA_StopAttack:
 				User->StopAttack();

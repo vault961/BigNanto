@@ -135,10 +135,10 @@ void APlayerCharacter::Tick(float DeltaTime)
 		{
 			//FRotator NewRotation;
 			if (NewDir == 1) {
-				SetActorRelativeRotation(FRotator(0.f, 90.f, 0.f));
+				SetActorRelativeRotation(FRotator(0.f, -90.f, 0.f));
 			}
 			else {
-				SetActorRelativeRotation(FRotator(0.f, -90.f, 0.f));
+				SetActorRelativeRotation(FRotator(0.f, 90.f, 0.f));
 			}
 		}
 
@@ -207,6 +207,7 @@ void APlayerCharacter::SetCurrentState(ECharacterState NewState)
 void APlayerCharacter::UpdateLocation(FVector New)
 {
 	NewLocation = New;
+	UE_LOG(LogTemp, Log, TEXT("%f, %f"), NewLocation.Y, NewLocation.Z);
 }
 
 void APlayerCharacter::UpdateStatus()
@@ -407,7 +408,7 @@ void APlayerCharacter::StopSpecialAbility()
 
 void APlayerCharacter::Die()
 {
-	UE_LOG(LogTemp, Warning, TEXT("끄앙 쥬금"));
+	//UE_LOG(LogTemp, Warning, TEXT("끄앙 쥬금"));
 	//GetCharacterMovement()->GravityScale = 0.f;
 	//GetCapsuleComponent()->SetSimulatePhysics(false);
 	/*Weapon->WeaponOwner = nullptr;
@@ -415,7 +416,7 @@ void APlayerCharacter::Die()
 	GameInstance->PlayerList[MyID] = nullptr;*/
 	//AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewActor->CameraComponent);
 	//GameInstance->PlayerController->SetViewTargetWithBlend(CenterViewCamera);
-	Destroy();
+	//Destroy();
 	//FVector RespawnLocation = GameInstance->CharacterSpawner->GetRandomPointInVolume();
 	//GameInstance->CharacterSpawner->SpawnCharacter(1, RespawnLocation.Y, RespawnLocation.Z, DamagePercent, true);
 }

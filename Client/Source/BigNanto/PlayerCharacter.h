@@ -17,8 +17,6 @@ enum class ECharacterState : uint8
 	EDefend,		// 방어
 	EHit,			// 맞는 중
 	EChanneling,	// 집중 중
-	EStopAttack,
-	EDefendHit,
 };
 
 // 액션
