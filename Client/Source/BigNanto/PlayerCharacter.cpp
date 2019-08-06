@@ -92,7 +92,7 @@ APlayerCharacter::APlayerCharacter()
 
 APlayerCharacter::~APlayerCharacter()
 {
-	UE_LOG(LogTemp, Log, TEXT("플레이어 '%s' 소멸자 호출"), *PlayerName);
+	//UE_LOG(LogTemp, Log, TEXT("플레이어 '%s' 소멸자 호출"), *PlayerName);
 }
 
 void APlayerCharacter::BeginPlay()
@@ -118,6 +118,8 @@ void APlayerCharacter::BeginPlay()
 
 	PlayerLocation = GetActorLocation();
 	SendDelay = 0;
+
+	UE_LOG(LogTemp, Log, TEXT("My Owner is : %s"), *PlayerUI->GetOwner()->GetName());
 }
 
 void APlayerCharacter::Tick(float DeltaTime)
@@ -218,7 +220,7 @@ void APlayerCharacter::UpdateLocation(FVector New, uint8 Dir)
 {
 	NewLocation = New;
 	NewDir = Dir;
-	UE_LOG(LogTemp, Log, TEXT("PosY : %f, PosZ : %f"), NewLocation.Y, NewLocation.Z);
+	//UE_LOG(LogTemp, Log, TEXT("PosY : %f, PosZ : %f"), NewLocation.Y, NewLocation.Z);
 }
 
 void APlayerCharacter::UpdateStatus()
@@ -345,12 +347,11 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	// 나 일경우 Hit 애니메이션 전송, hit damage 처리
 	if (IsMine)
 	{
-		anibody[0] = (char)ECharacterAction::EA_Hit;
+		//anibody[0] = (char)ECharacterAction::EA_Hit;
 		//GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
 
 		// 데미지 퍼센트에 히트 데미지 추가
 		DamagePercent += HitDamage;
-
 		//GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, sizeof(float));
 
 		// 공격 받은 방향으로 넉백
@@ -417,11 +418,12 @@ void APlayerCharacter::Die()
 	{
 		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
 		GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
+
 		anibody[0] = (char)ECharacterAction::EA_Die;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
+
+
 		Destroy();
 	}
 
-	//FVector RespawnLocation = GameInstance->CharacterSpawner->GetRandomPointInVolume();
-	//GameInstance->CharacterSpawner->SpawnCharacter(1, RespawnLocation.Y, RespawnLocation.Z, DamagePercent, true);
 }

@@ -114,7 +114,6 @@ public:
 	char body[50];
 	char anibody[50];
 	bool IsMine;
-	char Name[NAMELEN];
 	uint8 NewDir;
 	uint8 PlayerDir;
 

@@ -268,7 +268,6 @@ bool UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort)
 		UE_LOG(LogTemp, Error, TEXT("Cannot create socket."));
 		return false;
 	}
-	UE_LOG(LogTemp, Log, TEXT("PlayerController Name : %s"), *PlayerController->GetName());
 
 	UE_LOG(LogTemp, Log, TEXT("ServerIP = %s"), *ServerIP);
 	UE_LOG(LogTemp, Log, TEXT("ServerPort = %d"), ServerPort);
