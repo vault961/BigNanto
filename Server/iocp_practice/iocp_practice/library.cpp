@@ -61,7 +61,7 @@ void User::GetOthersInfo() {
 			DataAddCopy(source, &fromuser->CharacterClass, sizeof(char), sum);
 			DataAddCopy(source, &fromuser->PosY, sizeof(float), sum);
 			DataAddCopy(source, &fromuser->PosZ, sizeof(float), sum);
-			DataAddCopy(source, &fromuser->Damage, sizeof(wchar_t), sum);
+			DataAddCopy(source, &fromuser->Damage, sizeof(float), sum);
 			DataAddCopy(source, fromuser->Name, namelen, sum);
 
 
@@ -91,7 +91,7 @@ void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, wchar_t& len) {
 	DataAddGet(&myuser.CharacterClass, source, sizeof(char), sum);
 	DataAddGet(&myuser.PosY, source, sizeof(float), sum);
 	DataAddGet(&myuser.PosZ, source, sizeof(float), sum);
-	DataAddGet(&myuser.Damage, source, sizeof(wchar_t), sum);
+	DataAddGet(&myuser.Damage, source, sizeof(float), sum);
 	myuser.Name[len - sum - FRONTLEN] = '\0';
 	DataAddGet(myuser.Name, source, len-sum-FRONTLEN, sum);
 
@@ -106,6 +106,7 @@ void EnterProcess(User& myuser, shared_ptr<Packet>& temppacket) {
 	myuser.PushAndSend(temp);
 }
 
+
 void RecvProcess(char * source, int retValue, User& myuser) {
 	char * receiveBuffer = myuser.ClientSocket.ReceiveBuffer;
 	int& receivedSize = myuser.ClientSocket.ReceivedBufferSize;
@@ -117,10 +118,10 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		return;
 
 	wchar_t len = *(wchar_t*)receiveBuffer;
-	printf("%d recieve\n", len);
+	//printf("%d recieve\n", len);
 
 	if (receivedSize >= len) {
-		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(char*)(receiveBuffer+USERLEN+LENLEN), len, myuser.ClientSocket.Socket, receiveBuffer + FRONTLEN);
+		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receiveBuffer+USERLEN+LENLEN), len, myuser.ClientSocket.Socket, receiveBuffer + FRONTLEN);
 		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - len); // array resize
 		myuser.ClientSocket.ReceivedBufferSize -= len;
 
@@ -135,7 +136,13 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 			return;
 			break;
 		case PACKET_TYPE::UPDATELOCATION:
+			myuser.PosY = *(float*)(temppacket.get()->Body + FRONTLEN);
+			myuser.PosZ = *(float*)(temppacket.get()->Body + FRONTLEN + 4);
+			myuser.Dir = *(temppacket.get()->Body + FRONTLEN + 8);
 			//printf("%f %f\n", *(float*)(temppacket.get()->Body + FRONTLEN), *(float*)(temppacket.get()->Body+FRONTLEN +4  ));
+			break;
+		case PACKET_TYPE::UPDATEDMG:
+			myuser.Damage = *(float*)(temppacket.get()->Body + FRONTLEN);
 			break;
 		}
 		

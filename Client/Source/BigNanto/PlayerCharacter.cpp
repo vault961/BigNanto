@@ -130,8 +130,8 @@ void APlayerCharacter::Tick(float DeltaTime)
 		AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
 		if (CurrentState == ECharacterState::EIdle || CurrentState == ECharacterState::EJump)
 		{
-			FRotator NewRotation;
-			if (UpdatedLocation.Y > PlayerLocation.Y) {
+			//FRotator NewRotation;
+			if (NewDir == 1) {
 				SetActorRelativeRotation(FRotator(0.f, 90.f, 0.f));
 			}
 			else {
@@ -150,7 +150,8 @@ void APlayerCharacter::Tick(float DeltaTime)
 
 			memcpy(body, &PlayerLocation.Y, sizeof(PlayerLocation.Y));
 			memcpy(body + 4, &PlayerLocation.Z, sizeof(PlayerLocation.Z));
-			GameInstance->SendMessage(PACKET_TYPE::UPDATELOCATION, body, 8);
+			memcpy(body + 8, &PlayerDir, sizeof(char));
+			GameInstance->SendMessage(PACKET_TYPE::UPDATELOCATION, body, 9);
 			SendDelay = 0;
 		}
 		
@@ -273,11 +274,22 @@ void APlayerCharacter::MoveRight(float val)
 {
 	if ((CurrentState == ECharacterState::EIdle) || (CurrentState == ECharacterState::EJump))
 	{
-		if(0 != val)
-			SetActorRelativeRotation(FRotator(0.f, -90.f * FMath::RoundFromZero(val), 0.f ));
-
+		if (0 != val) {
+			SetActorRelativeRotation(FRotator(0.f, -90.f * FMath::RoundFromZero(val), 0.f));
+			if(val > 0)
+				PlayerDir = 1;
+			else if(val < 0)
+				PlayerDir = 0;
+		}
+			
 		// 입력받은 방향으로 이동
 		AddMovementInput(FVector(0.f, -1.f, 0.f), val);
+		
+		//if (val != lastval) {
+			
+		//}
+
+		//lastval = val;
 	}
 }
 
@@ -329,6 +341,9 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 
 		// 데미지 퍼센트에 히트 데미지 추가
 		DamagePercent += HitDamage;
+
+		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, sizeof(float));
+
 		// 공격 받은 방향으로 넉백
 		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
 

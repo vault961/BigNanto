@@ -125,7 +125,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 
 		// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
 		char buf[30];
-		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_UTF8(*MyName), sizeof(FString));
+		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, (char*)MyName.GetCharArray().GetData(), MyName.Len());
 
 		// 서버에게 내 캐릭터 요청
 		SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);
@@ -136,7 +136,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		char CharacterClass = packet.body[0];
 		float PosY = *(float*)(packet.body + sizeof(char));
 		float PosZ = *(float*)(packet.body + sizeof(char) + sizeof(float));
-		int DamagePercent = *(wchar_t*)(packet.body + sizeof(float) * 2 + sizeof(char));
+		float DamagePercent = *(float*)(packet.body + sizeof(float) * 2 + sizeof(char));
 		uint8* CharacterName = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
 		int NameLen = packet.len - sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t) - FRONTLEN;
 
@@ -188,13 +188,14 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		APlayerCharacter* User = PlayerList[packet.userID];
 		NewPosition.Y = *(float*)packet.body;
 		NewPosition.Z = *(float*)(packet.body + 4);
+		User->NewDir = *(packet.body + 8);
 		User->UpdateLocation(NewPosition);
 		break;
 	}
 	case PACKET_TYPE::UPDATEDMG:
 	{
 		APlayerCharacter* User = PlayerList[packet.userID];
-		User->DamagePercent = *(wchar_t*)(packet.body + 8);
+		User->DamagePercent = *(float*)(packet.body);
 		break;
 	}
 	case PACKET_TYPE::UPDATESTATE:
@@ -221,17 +222,17 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				break;
 			}
 		}
-		break;
 	}
+	
 	}
 }
 
-int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char * name, int namelen) {
+int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float Z, float damage, char * name, int namelen) {
 	int sum = 0;
 	DataAddCopy(source, &cls, sizeof(char), sum);
 	DataAddCopy(source, &Y, sizeof(float), sum);
 	DataAddCopy(source, &Z, sizeof(float), sum);
-	DataAddCopy(source, &damage, sizeof(wchar_t), sum);
+	DataAddCopy(source, &damage, sizeof(float), sum);
 	DataAddCopy(source, &name, namelen, sum);
 	return sum;
 }
