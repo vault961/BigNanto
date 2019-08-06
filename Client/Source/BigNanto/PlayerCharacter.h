@@ -66,9 +66,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	class UCameraComponent* SideViewCameraComponent;
 
-	// 캐릭터이름
+	// 캐릭터 상태 UI (데미지퍼센트, 플레이어 네임 표시)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	class UWidgetComponent* PlayerUI;
+
+	// 플레이어 이름
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterInfo)
-	FName CharacterName;
+	FString PlayerName;
 
 	// 캐릭터 데미지 퍼센트
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterInfo)
@@ -82,9 +86,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterInfo)
 	uint8 LifeCount;
 
-	// 애님 인스턴스
+	// 애님 인스턴스 레퍼런스
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation)
 	class UPlayerCharacterAnim* AnimInstance;
+	// 게임 인스턴스 레퍼런스
+	class UBigNantoGameInstance* GameInstance;
 
 	// 소유중인 무기
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterInfo)
@@ -106,7 +112,6 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = CharacterInfo)
 	ECharacterClass CharacterClass;
 
-	class UBigNantoGameInstance* GameInstance;
 	int32 SendDelay;
 	char body[50];
 	char anibody[50];
@@ -167,6 +172,7 @@ public:
 	UFUNCTION()
 	virtual void StopSpecialAbility();
 
+	// 사망
 	UFUNCTION(BlueprintCallable)
 	virtual void Die();
 };

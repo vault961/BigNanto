@@ -95,8 +95,8 @@ void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, wchar_t& len) {
 	myuser.Name[len - sum - FRONTLEN] = '\0';
 	DataAddGet(myuser.Name, source, len-sum-FRONTLEN, sum);
 
-	printf("%f %f\n", myuser.PosY, myuser.PosZ);
-	printf("username :%s ", myuser.Name);
+	printf("PosY : %f, PosZ : %f\n", myuser.PosY, myuser.PosZ);
+	printf("username : %s\n", myuser.Name);
 
 }
 
@@ -117,7 +117,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		return;
 
 	wchar_t len = *(wchar_t*)receiveBuffer;
-	printf("%d recieve\n", len);
+	//printf("%d recieve\n", len);
 
 	if (receivedSize >= len) {
 		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(char*)(receiveBuffer+USERLEN+LENLEN), len, myuser.ClientSocket.Socket, receiveBuffer + FRONTLEN);

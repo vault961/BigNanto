@@ -6,7 +6,6 @@
 
 AWarriorCharacter::AWarriorCharacter()
 {
-	CharacterName = TEXT("Warrior");
 	CharacterClass = ECharacterClass::EWarrior;
 }
 

@@ -76,6 +76,8 @@ APlayerCharacter::APlayerCharacter()
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> HitParticleAsset(TEXT("/Game/StarterContent/Particles/P_Explosion"));
 	if (HitParticleAsset.Succeeded())
 		HitParticle = HitParticleAsset.Object;
+
+	static ConstructorHelpers::FObjectFinder<UParticleSystem> HitParticleAsset(TEXT("/Game/StarterContent/Particles/P_Explosion"));
 }
 
 APlayerCharacter::~APlayerCharacter()
@@ -127,7 +129,8 @@ void APlayerCharacter::Tick(float DeltaTime)
 	{
 		UpdatedLocation = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
 		
-		AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
+		////////// 테스트용 인풋
+		//AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
 		if (CurrentState == ECharacterState::EIdle || CurrentState == ECharacterState::EJump)
 		{
 			FRotator NewRotation;
@@ -139,7 +142,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 			}
 		}
 
-		//SetActorLocation(UpdatedLocation, false);
+		SetActorLocation(UpdatedLocation, false);
 
 	}
 	else {
@@ -395,8 +398,8 @@ void APlayerCharacter::Die()
 	/*Weapon->WeaponOwner = nullptr;
 	GameInstance->MyCharacter = nullptr;
 	GameInstance->PlayerList[MyID] = nullptr;*/
-	AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewActor->CameraComponent);
-	GameInstance->PlayerController->SetViewTargetWithBlend(CenterViewCamera);
+	//AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewActor->CameraComponent);
+	//GameInstance->PlayerController->SetViewTargetWithBlend(CenterViewCamera);
 	Destroy();
 	//FVector RespawnLocation = GameInstance->CharacterSpawner->GetRandomPointInVolume();
 	//GameInstance->CharacterSpawner->SpawnCharacter(1, RespawnLocation.Y, RespawnLocation.Z, DamagePercent, true);

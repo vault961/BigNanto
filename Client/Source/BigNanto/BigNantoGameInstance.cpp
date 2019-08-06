@@ -125,8 +125,9 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 
 		// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
 		char buf[30];
-		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_UTF8(*MyName), sizeof(FString));
-
+		//int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_UTF8(*MyName), sizeof(FString));
+		int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, MyName.GetCharArray().GetData(), MyName.Len());
+		UE_LOG(LogTemp, Warning, TEXT("%s"), MyName.GetCharArray().GetData());
 		// 서버에게 내 캐릭터 요청
 		SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);
 		break;
@@ -137,14 +138,13 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		float PosY = *(float*)(packet.body + sizeof(char));
 		float PosZ = *(float*)(packet.body + sizeof(char) + sizeof(float));
 		int DamagePercent = *(wchar_t*)(packet.body + sizeof(float) * 2 + sizeof(char));
-		uint8* CharacterName = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
+		uint8* PlayerName = packet.body + sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t);
 		int NameLen = packet.len - sizeof(float) * 2 + sizeof(char) + sizeof(wchar_t) - FRONTLEN;
 
 		// 패킷 ID와 내 ID 비교
 		// 내 캐릭터 스폰
 		if (packet.userID == MyID)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("mssss"));
 			MyCharacter = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
 			if (nullptr == MyCharacter)
 			{
@@ -152,14 +152,22 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				return;
 			}
 			PlayerList[packet.userID] = MyCharacter;
-			memcpy(MyCharacter->Name, CharacterName, NameLen);
+
+			memcpy(MyCharacter->Name, PlayerName, NameLen);
 			MyCharacter->Name[NameLen] = '\0';
+
+			char NameArray[20];
+			memcpy(NameArray, PlayerName, NameLen);
+			MyCharacter->PlayerName = FString(UTF8_TO_TCHAR(NameArray));
+			UE_LOG(LogTemp, Warning, TEXT("GameInstance Name = %s"), NameArray);
+			UE_LOG(LogTemp, Warning, TEXT("CharacterFString = %s"), *MyCharacter->PlayerName);
+			UE_LOG(LogTemp, Warning, TEXT("CharacterArrayName = %s"), MyCharacter->Name);
+
 			MyCharacter->MyID = MyID;
 
 			if (nullptr == PlayerController)
 				PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 			PlayerController->Possess(MyCharacter);
-			PlayerController->bShowMouseCursor = false;
 
 			CurrentUserNum++;
 			UE_LOG(LogTemp, Warning, TEXT("myuser login"));
@@ -175,7 +183,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			}
 			//float movespeed = Character->GetVelocity().Size();
 			PlayerList[packet.userID] = Character;
-			memcpy(Character->Name, CharacterName, NameLen);
+
+			memcpy(Character->Name, PlayerName, NameLen);
 			Character->Name[NameLen] = '\0';
 
 			CurrentUserNum++;
@@ -188,6 +197,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		APlayerCharacter* User = PlayerList[packet.userID];
 		NewPosition.Y = *(float*)packet.body;
 		NewPosition.Z = *(float*)(packet.body + 4);
+		// rotation = *(bool*)(packet.body + 8)
 		User->UpdateLocation(NewPosition);
 		break;
 	}
@@ -226,13 +236,14 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 }
 
-int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, char * name, int namelen) {
+int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float Z, uint32 damage, TCHAR * name, int namelen) {
 	int sum = 0;
 	DataAddCopy(source, &cls, sizeof(char), sum);
 	DataAddCopy(source, &Y, sizeof(float), sum);
 	DataAddCopy(source, &Z, sizeof(float), sum);
 	DataAddCopy(source, &damage, sizeof(wchar_t), sum);
 	DataAddCopy(source, &name, namelen, sum);
+
 	return sum;
 }
 
@@ -250,7 +261,7 @@ void UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort, FStrin
 	UE_LOG(LogTemp, Log, TEXT("UserName = %s"), *UserName);
 	UE_LOG(LogTemp, Log, TEXT("ClassType = %d"), ClassType);
 
-	MyName = UserName;
+	MyName = UserName + '\0';
 	MyClassType = ClassType;
 
 	TSharedRef<FInternetAddr> RemoteAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
