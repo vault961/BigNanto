@@ -65,7 +65,7 @@ void User::GetOthersInfo() {
 			DataAddCopy(source, fromuser->Name, namelen, sum);
 
 
-			auto ko = make_shared<Packet>(PACKET_TYPE::PLAYERSPAWN, sum, it->first, source);
+			auto ko = make_shared<Packet>(PACKET_TYPE::PLAYERSPAWN, sum+FRONTLEN, it->first, source);
 			SentInfo temp(ko);
 			PushAndSend(temp);
 		}

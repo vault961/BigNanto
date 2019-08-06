@@ -192,7 +192,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		}
 
 		PlayerList[packet.userID] = Character;
-		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName));
+		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName)) + '\0';
+		
 		break;
 	}
 	case PACKET_TYPE::UPDATELOCATION:
