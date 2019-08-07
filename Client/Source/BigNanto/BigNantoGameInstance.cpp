@@ -43,19 +43,19 @@ void UBigNantoGameInstance::Shutdown()
 		ConnectionSocket->Close();
 }
 
-void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t BodySize)
+void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 BodySize)
 {
-	uint32 size = (uint32)BodySize + FRONTLEN;
+	uint32 size = BodySize + FRONTLEN;
 	int32 sent = 0;
 
-	char BUF[BUFLEN];
+	uint8 BUF[BUFLEN];
 
 	FMemory::Memcpy(BUF + LENLEN + USERLEN, &Type, TYPELEN);
 	FMemory::Memcpy(BUF, &size, LENLEN);
 	FMemory::Memcpy(BUF + FRONTLEN, Body, BodySize);
 
 	do {
-		bool successful = ConnectionSocket->Send((uint8*)BUF, size, sent);
+		bool successful = ConnectionSocket->Send(BUF, size, sent);
 
 		if (!successful) {
 			UE_LOG(LogTemp, Error, TEXT("Message can't send!!!!!!!!"));

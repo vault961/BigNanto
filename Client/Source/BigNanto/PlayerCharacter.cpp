@@ -264,8 +264,8 @@ void APlayerCharacter::DoJump()
 			return;
 
 		// 나 일경우, defenthit 애니메이션 전송
-		anibody=ECharacterAction::EA_Jump;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, (char*)&anibody, sizeof(ECharacterAction));
+		anibody= (char)ECharacterAction::EA_Jump;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody,1);
 
 
 		// 땅에 닿으면 점프 카운트 초기화
@@ -380,8 +380,8 @@ void APlayerCharacter::Attack()
 		if (CurrentState != ECharacterState::EIdle)
 			return;
 
-		anibody = ECharacterAction::EA_Attack;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, (char*)&anibody, sizeof(ECharacterAction));
+		anibody = (char)ECharacterAction::EA_Attack;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 
 	}
 
@@ -407,8 +407,8 @@ void APlayerCharacter::StopAttack()
 	// 나 일경우 stopattack 신호 보냄.
 	if (IsMine)
 	{
-		anibody = ECharacterAction::EA_StopAttack;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, (char*)&anibody, sizeof(ECharacterAction));
+		anibody = (char)ECharacterAction::EA_StopAttack;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 	}
 	
 	
@@ -432,8 +432,8 @@ void APlayerCharacter::Die()
 		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
 		GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
 
-		anibody=ECharacterAction::EA_Die;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, (char*)&anibody, sizeof(ECharacterAction));
+		anibody=(char)ECharacterAction::EA_Die;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 
 
 

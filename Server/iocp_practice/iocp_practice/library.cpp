@@ -7,7 +7,10 @@ WSAEVENT OrderQueueEvent;
 RWLock UserMapLock;
 SOCKET ListenSocket;
 HANDLE CompletionPort;
-std::unordered_map<SOCKET, User*> UserMap;
+std::map<SOCKET, User*> UserMap;
+Log logger;
+
+
 using namespace std;
 
 void AddSocket(SOCKET Socket) {
@@ -26,7 +29,7 @@ User& GetUser(SOCKET idx) {
 }
 
 void CompressArrays(SOCKET idx) {
-	printf("delete idx : %c\n", idx);
+	printf("delete idx : %d\n", idx);
 	UserMapLock.WriteLock();
 	UserMap.erase(idx);
 	UserMapLock.WriteUnLock();
@@ -85,7 +88,7 @@ void DataAddGet(T* source, char* get, int size, int& sum) {
 	sum += size;
 }
 
-void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, wchar_t& len) {
+void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, int& len) {
 	int sum = 0;
 	char * source = temppacket.get()->Body + FRONTLEN;
 	DataAddGet(&myuser.CharacterClass, source, sizeof(char), sum);
@@ -137,23 +140,26 @@ void NameCheckProcess(User& myuser, char * Name, int NameLen) {
 }
 
 void RecvProcess(char * source, int retValue, User& myuser) {
-	char * receiveBuffer = myuser.ClientSocket.ReceiveBuffer;
+	char * receivedBuffer = myuser.ClientSocket.ReceiveBuffer;
 	int& receivedSize = myuser.ClientSocket.ReceivedBufferSize;
 	
-	memcpy(receiveBuffer + receivedSize, source, retValue);
+	memcpy(receivedBuffer + receivedSize, source, retValue);
 	receivedSize += retValue;
 
 	if (receivedSize < FRONTLEN)   // 헤더는 무조건 있어야됨
 		return;
 
-	wchar_t len = *(wchar_t*)receiveBuffer;
-	//printf("%d recieve\n", len);
+	int len = (int)*(wchar_t*)receivedBuffer;
+	logger.write("[1]id:%d len:%d recvSize:%d", myuser.ClientSocket.Socket, len, receivedSize);
+
+	//printf("%d %d recieve\n", len);
 
 	if (receivedSize >= len) {
-		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receiveBuffer+USERLEN+LENLEN), len, myuser.ClientSocket.Socket, receiveBuffer + FRONTLEN, BROADCAST_MODE::ALL);
+		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receivedBuffer +USERLEN+LENLEN), len, myuser.ClientSocket.Socket, receivedBuffer + FRONTLEN, BROADCAST_MODE::ALL);
 		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - len); // array resize
 		myuser.ClientSocket.ReceivedBufferSize -= len;
-		//printf("%d recived type: %d\n", myuser.ClientSocket.Socket, temppacket->Type);
+		logger.write("[2]id:%d len:%d recvSize:%d", myuser.ClientSocket.Socket, len, receivedSize);
+
 
 		switch (temppacket.get()->Type) {
 		case PACKET_TYPE::PLAYERSPAWN:

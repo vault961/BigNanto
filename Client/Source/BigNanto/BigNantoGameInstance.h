@@ -86,7 +86,7 @@ public:
 	FVector NewPosition;
 
 	// 패킷 전송 함수
-	void SendMessage(PACKET_TYPE Type, char * Body, wchar_t size);
+	void SendMessage(PACKET_TYPE Type, char * Body, uint32 size);
 	// 들어온 패킷 분석
 	void PacketHandler();
 	// 들어온 패킷 처리

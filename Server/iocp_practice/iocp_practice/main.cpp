@@ -7,13 +7,15 @@
 using namespace std;
 
 
+
+
 extern OrderQueue<SentInfo> g_OrderQueue;
 extern WSAEVENT OrderQueueEvent;
 extern RWLock UserMapLock;
 extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
-extern std::unordered_map<SOCKET, User*> UserMap;
-
+extern std::map<SOCKET, User*> UserMap;
+extern Log logger;
 
 void OrderQueueThread() {
 	while (1) {

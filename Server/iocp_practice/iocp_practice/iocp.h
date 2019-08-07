@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <queue>
-#include <unordered_map>
+#include <map>
 #include <memory>
 #include <functional>
 #pragma comment (lib, "Ws2_32.lib")
@@ -183,6 +183,30 @@ public:
 };
 
 
+class Log {
+public:
+	FILE *fp;
+
+	Log() {
+		fp = fopen("log.txt", "a");
+	}
+	
+	void write(char *format, ...) {
+		SYSTEMTIME cur_time;
+		GetLocalTime(&cur_time);
+
+
+		va_list args;
+		va_start(args, format);
+		fprintf(fp, "[%02d:%02d:%02d.%03d]", cur_time.wHour, cur_time.wMinute, cur_time.wSecond, cur_time.wMilliseconds);
+		vfprintf(fp, format, args);
+		fprintf(fp, "\n");
+		va_end(args);
+	}
+	~Log() {
+		fclose(fp);
+	}
+};
 
 class User {
 public:
@@ -214,7 +238,8 @@ extern OrderQueue<SentInfo> g_OrderQueue;
 extern RWLock UserMapLock;
 extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
-extern std::unordered_map<SOCKET, User*> UserMap;
+extern std::map<SOCKET, User*> UserMap;
+extern Log logger;
 
 User& GetUser(SOCKET idx);
 void CompressArrays(SOCKET i);
@@ -222,7 +247,7 @@ void AddSocket(SOCKET Socket);
 void Compress(char *source, int len);
 void RecvProcess(char * source, int retValue, User& myuser);
 void OrderQueueThread();
-void SpawnProcess(User& myuser, std::shared_ptr<Packet>& temppacket, wchar_t& len);
+void SpawnProcess(User& myuser, std::shared_ptr<Packet>& temppacket, int& len);
 void EnterProcess(User& myuser, std::shared_ptr<Packet>& temppacket);
 
 template <typename T>
