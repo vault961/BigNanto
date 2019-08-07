@@ -39,7 +39,7 @@ public:
 		userID = myId;
 		len = myLen;
 
-		memcpy(body, myBody, len - FRONTLEN);
+		FMemory::Memcpy(body, myBody, len - FRONTLEN);
 		body[len - FRONTLEN] = 0;
 	}
 };

@@ -42,7 +42,7 @@ enum class ECharacterClass : uint8
 	EWizard,	// 마법사
 };
 
-UCLASS()
+UCLASS(Blueprintable, BlueprintType)
 class BIGNANTO_API APlayerCharacter : public ACharacter
 {
 	GENERATED_BODY()
@@ -65,8 +65,8 @@ public:
 	class UCameraComponent* SideViewCameraComponent;
 
 	// 캐릭터 상태 UI (데미지퍼센트, 플레이어 네임 표시)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
-	class UWidgetComponent* PlayerUI;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	//class UWidgetComponent* PlayerUI;
 
 	// 플레이어 이름
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterInfo)

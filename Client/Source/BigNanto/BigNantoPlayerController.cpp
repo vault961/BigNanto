@@ -18,3 +18,11 @@ void ABigNantoPlayerController::BeginPlay()
 		GameInstance->PlayerController = this;
 	}
 }
+
+void ABigNantoPlayerController::OnGameUI()
+{
+}
+
+void ABigNantoPlayerController::OffGameUI()
+{
+}
