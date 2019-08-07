@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Runtime/UMG/Public/UMG.h"
 #include "PlayerCharacter.generated.h"
 #define NAMELEN 20
 
@@ -42,6 +43,18 @@ enum class ECharacterClass : uint8
 	EWizard,	// 마법사
 };
 
+UCLASS()
+class UBigUserWidget : public UUserWidget
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class APlayerCharacter* PlayerCharacterRef;
+
+	UFUNCTION(BlueprintCallable)
+	class APlayerCharacter* GetPlayerRef() { return PlayerCharacterRef; }
+};
+
 UCLASS(Blueprintable, BlueprintType)
 class BIGNANTO_API APlayerCharacter : public ACharacter
 {
@@ -65,8 +78,8 @@ public:
 	class UCameraComponent* SideViewCameraComponent;
 
 	// 캐릭터 상태 UI (데미지퍼센트, 플레이어 네임 표시)
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
-	//class UWidgetComponent* PlayerUI;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	class UWidgetComponent* PlayerUI;
 
 	// 플레이어 이름
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterInfo)

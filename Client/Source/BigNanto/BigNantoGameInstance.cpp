@@ -79,7 +79,6 @@ void UBigNantoGameInstance::DataAddGet(T* source, char* get, int size, int& sum)
 	sum += size;
 }
 
-
 void UBigNantoGameInstance::PacketHandler()
 {
 	if (ConnectionSocket->HasPendingData(Size)) {
@@ -177,7 +176,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
 
 			if (nullptr == PlayerController)
-				PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+				PlayerController = Cast<ABigNantoPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 			PlayerController->Possess(Character);
 			Character->MyID = MyID;
 		}

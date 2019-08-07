@@ -20,6 +20,7 @@
 #include "CharacterSpawner.h"
 #include "CenterViewPawn.h"
 #include "Components/WidgetComponent.h"
+#include "BigNantoPlayerController.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -81,10 +82,12 @@ APlayerCharacter::APlayerCharacter()
 		HitParticle = HitParticleAsset.Object;
 
 	// 캐릭터 UI
-	UWidgetComponent* PlayerUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerUI"));
-	static ConstructorHelpers::FClassFinder<UUserWidget> PlayerUIAsset(TEXT("/Game/UMG/PlayerFloatingUI"));
+	PlayerUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerUI"));
+	static ConstructorHelpers::FClassFinder<UUserWidget> PlayerUIAsset(TEXT("/Game/UMG/PlayerUI"));
 	if (PlayerUIAsset.Succeeded())
+	{
 		PlayerUI->SetWidgetClass(PlayerUIAsset.Class);
+	}
 
 	PlayerUI->SetupAttachment(RootComponent);
 	PlayerUI->RelativeLocation = FVector(0.f, 0.f, 150.f);
@@ -119,6 +122,8 @@ void APlayerCharacter::BeginPlay()
 
 	PlayerLocation = GetActorLocation();
 	SendDelay = 0;
+
+	Cast<UBigUserWidget>(PlayerUI->GetUserWidgetObject())->PlayerCharacterRef = this;
 
 	//UE_LOG(LogTemp, Log, TEXT("My Owner is : %s"), *PlayerUI->GetOwner()->GetName());
 }

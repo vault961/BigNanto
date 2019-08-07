@@ -66,7 +66,6 @@ void ABigNantoGameModeBase::RemoveAllWidget()
 	{
 		CurrentWidget->RemoveFromViewport();
 		CurrentWidget = nullptr;
-		GameInstance->PlayerController->SetInputMode(FInputModeGameOnly());
-		GameInstance->PlayerController->bShowMouseCursor = false;
+		GameInstance->PlayerController->OffGameUI();
 	}
 }
