@@ -20,7 +20,7 @@
 #include "CharacterSpawner.h"
 #include "CenterViewPawn.h"
 #include "Components/WidgetComponent.h"
-
+#include "BigNantoPlayerController.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()

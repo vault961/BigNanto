@@ -9,8 +9,7 @@ void ABigNantoPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetInputMode(FInputModeUIOnly());
-	bShowMouseCursor = true;
+	OnGameUI();
 
 	UBigNantoGameInstance* GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());
 	if (nullptr != GameInstance)
@@ -21,8 +20,12 @@ void ABigNantoPlayerController::BeginPlay()
 
 void ABigNantoPlayerController::OnGameUI()
 {
+	SetInputMode(FInputModeUIOnly());
+	bShowMouseCursor = true;
 }
 
 void ABigNantoPlayerController::OffGameUI()
 {
+	SetInputMode(FInputModeGameOnly());
+	bShowMouseCursor = false;
 }

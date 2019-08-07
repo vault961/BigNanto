@@ -20,4 +20,6 @@ void UAnimNotify_ComboAttack1::Notify(USkeletalMeshComponent* MeshComp, UAnimSeq
 		PlayerCharacter->SetCurrentState(ECharacterState::EIdle);
 		PlayerCharacter->SetWeaponActive(false);
 	}
+	else
+		PlayerCharacter->SetWeaponActive(true);
 }

@@ -81,7 +81,7 @@ public:
 	class ACenterViewPawn* CenterViewPawn;
 	
 	TMap<uint32, class APlayerCharacter*> PlayerList;
-	class APlayerController* PlayerController;
+	class ABigNantoPlayerController* PlayerController;
 	class ABigNantoGameModeBase* GameModeBase;
 	FVector NewPosition;
 
