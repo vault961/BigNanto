@@ -158,7 +158,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		float PosY;
 		float PosZ;
 		float DamagePercent;
-		uint8 PlayerName[30];
+		uint8 PlayerName[30]{ 0 };
 
 		DataAddGet(&CharacterClass, source, sizeof(char), sum);
 		DataAddGet(&PosY, source, sizeof(float), sum);
@@ -192,9 +192,10 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			UE_LOG(LogTemp, Error, TEXT("내 캐릭터를 정상적으로 스폰할 수 없습니다"));
 			return;
 		}
-
-		PlayerList[packet.userID] = Character;
-		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName));
+		if(!PlayerList.Contains(packet.userID))
+			PlayerList.Add(packet.userID, Character);
+		//PlayerList[packet.userID] = Character;
+		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName)) + '\0';
 		
 		break;
 	}
