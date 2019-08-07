@@ -345,7 +345,7 @@ void APlayerCharacter::AbilityHit(AWeapon_MagicWand * OverlappedAbility)
 
 void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 {
-	GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, PlayerName + TEXT(" HitandKnockback()"));
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" HitandKnockback()"));
 	// 나 일경우 Hit 애니메이션 전송, hit damage 처리
 	if (IsMine)
 	{
@@ -366,7 +366,7 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 }
 void APlayerCharacter::Attack()
 {
-	GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, PlayerName + TEXT(" Attack()"));
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" Attack()"));
 	// 나일경우 attack 애니메이션 전송
 	if (IsMine)
 	{
@@ -387,7 +387,7 @@ void APlayerCharacter::Attack()
 
 void APlayerCharacter::StopAttack()
 {
-	GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, PlayerName + TEXT(" StopAttack()"));
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" StopAttack()"));
 	// 나 일경우 stopattack 신호 보냄.
 	if (IsMine)
 	{
@@ -413,7 +413,7 @@ void APlayerCharacter::StopSpecialAbility()
 
 void APlayerCharacter::Die()
 {
-	GEngine->AddOnScreenDebugMessage(0, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"));
 	if (IsMine)
 	{
 		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);

@@ -54,15 +54,15 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t B
 	memcpy(BUF, &size, LENLEN);
 	memcpy(BUF + FRONTLEN, Body, BodySize);
 
-	do {
+	//do {
 		bool successful = ConnectionSocket->Send((uint8*)BUF, size, sent);
 
 		if (!successful) {
 			UE_LOG(LogTemp, Error, TEXT("Message can't send!!!!!!!!"));
 		}
-		size -= sent;
+	//	size -= sent;
 
-	} while (size > 0);
+	//} while (size > 0);
 	return;
 }
 
