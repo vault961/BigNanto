@@ -345,28 +345,28 @@ void APlayerCharacter::AbilityHit(AWeapon_MagicWand * OverlappedAbility)
 
 void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 {
+	GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, PlayerName + TEXT(" HitandKnockback()"));
 	// 나 일경우 Hit 애니메이션 전송, hit damage 처리
-	//if (IsMine)
+	if (IsMine)
 	{
 		DamagePercent += HitDamage;
-
-		// 공격 받은 방향으로 넉백
-		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
-
-		//GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
-
+		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
+		StopAttack();
+		StopSpecialAbility();
 	}
 
 	// 현재행동 중단하고 EHit 상태로 바꿔주기
-	StopAttack();
-	StopSpecialAbility();
 	SetCurrentState(ECharacterState::EHit);
 	AnimInstance->PlayGetHit();
+
 	
+	// 공격 받은 방향으로 넉백
+	LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorTransform());
 }
 void APlayerCharacter::Attack()
 {
+	GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, PlayerName + TEXT(" Attack()"));
 	// 나일경우 attack 애니메이션 전송
 	if (IsMine)
 	{
@@ -387,6 +387,7 @@ void APlayerCharacter::Attack()
 
 void APlayerCharacter::StopAttack()
 {
+	GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, PlayerName + TEXT(" StopAttack()"));
 	// 나 일경우 stopattack 신호 보냄.
 	if (IsMine)
 	{
