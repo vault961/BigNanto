@@ -346,23 +346,21 @@ void APlayerCharacter::AbilityHit(AWeapon_MagicWand * OverlappedAbility)
 void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 {
 	// 나 일경우 Hit 애니메이션 전송, hit damage 처리
-	//if (IsMine)
+	if (IsMine)
 	{
 		DamagePercent += HitDamage;
 
 		// 공격 받은 방향으로 넉백
-		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
-
-		//GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
-
+		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
+		StopAttack();
+		StopSpecialAbility();
 	}
 
 	// 현재행동 중단하고 EHit 상태로 바꿔주기
-	StopAttack();
-	StopSpecialAbility();
 	SetCurrentState(ECharacterState::EHit);
 	AnimInstance->PlayGetHit();
-	
+	LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
+
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorTransform());
 }
 void APlayerCharacter::Attack()
