@@ -112,7 +112,7 @@ public:
 
 	int32 SendDelay;
 	char body[50];
-	char anibody[50];
+	ECharacterAction anibody;
 	bool IsMine;
 	uint8 NewDir;
 	uint8 PlayerDir;

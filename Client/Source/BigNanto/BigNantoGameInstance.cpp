@@ -63,6 +63,7 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t B
 		size -= sent;
 
 	} while (size > 0);
+
 	return;
 }
 
@@ -208,23 +209,23 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	{
 		if (packet.userID != MyID) {
 			APlayerCharacter* User = PlayerList[packet.userID];
-			switch (packet.body[0]) {
-			case (char)ECharacterAction::EA_Attack:
+			switch (*(ECharacterAction*)packet.body) {
+			case ECharacterAction::EA_Attack:
 				User->Attack();
 				break;
-			case (char)ECharacterAction::EA_Defend:
+			case ECharacterAction::EA_Defend:
 				break;
-			case (char)ECharacterAction::EA_DefendHit:
+			case ECharacterAction::EA_DefendHit:
 				break;
-			case (char)ECharacterAction::EA_Hit:
+			case ECharacterAction::EA_Hit:
 				break;
-			case (char)ECharacterAction::EA_Jump:
+			case ECharacterAction::EA_Jump:
 				User->DoJump();
 				break;
-			case (char)ECharacterAction::EA_StopAttack:
+			case ECharacterAction::EA_StopAttack:
 				User->StopAttack();
 				break;
-			case (char)ECharacterAction::EA_Die:
+			case ECharacterAction::EA_Die:
 				User->Destroy();
 				break;
 			}
