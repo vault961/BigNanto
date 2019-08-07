@@ -20,10 +20,12 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-
+	
+	// 카메라 붐
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class USpringArmComponent* CameraBoom;
 
+	// 카메라 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class UCameraComponent* CameraComponent;
 };

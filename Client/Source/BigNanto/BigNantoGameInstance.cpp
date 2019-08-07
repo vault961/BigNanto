@@ -256,7 +256,6 @@ void UBigNantoGameInstance::NameCheck(FString UserName, uint8 ClassType)
 {
 	MyName = UserName + '\0';
 	MyClassType = ClassType;
-	UE_LOG(LogTemp, Error, TEXT("Namecheck on"));
 
 	SendMessage(PACKET_TYPE::NAMECHECK, TCHAR_TO_ANSI(*UserName), UserName.Len());
 }

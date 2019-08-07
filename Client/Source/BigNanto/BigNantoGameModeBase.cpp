@@ -14,10 +14,12 @@ ABigNantoGameModeBase::ABigNantoGameModeBase()
 	DefaultPawnClass = ACenterViewPawn::StaticClass();
 	PlayerControllerClass = ABigNantoPlayerController::StaticClass();
 
+	// 로그인 위젯 클래스 연결
 	static ConstructorHelpers::FClassFinder<UUserWidget> LoginWidget(TEXT("/Game/UMG/LoginUI"));
 	if (LoginWidget.Succeeded())
 		LoginWidgetClass = LoginWidget.Class;
 
+	// 캐릭터 생성 위젯 클래스 연결
 	static ConstructorHelpers::FClassFinder<UUserWidget> CharacterMakeWidget(TEXT("/Game/UMG/CharacterMakeUI"));
 	if (CharacterMakeWidget.Succeeded())
 		CharacterMakeWidgetClass = CharacterMakeWidget.Class;
@@ -32,7 +34,8 @@ void ABigNantoGameModeBase::BeginPlay()
 		return;
 
 	GameInstance->GameModeBase = this;
-
+	
+	// 시작시 로그인 위젯으로 전환
 	ChangeWidget(LoginWidgetClass);
 }
 
@@ -58,6 +61,7 @@ void ABigNantoGameModeBase::ChangeWidget(TSubclassOf<UUserWidget> NewWidegtClass
 
 void ABigNantoGameModeBase::RemoveAllWidget()
 {
+	// 모든 위젯 삭제
 	if (CurrentWidget != nullptr)
 	{
 		CurrentWidget->RemoveFromViewport();
