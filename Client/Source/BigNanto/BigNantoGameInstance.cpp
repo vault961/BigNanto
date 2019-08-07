@@ -50,9 +50,9 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t B
 
 	char BUF[BUFLEN];
 
-	memcpy(BUF + LENLEN + USERLEN, &Type, TYPELEN);
-	memcpy(BUF, &size, LENLEN);
-	memcpy(BUF + FRONTLEN, Body, BodySize);
+	FMemory::Memcpy(BUF + LENLEN + USERLEN, &Type, TYPELEN);
+	FMemory::Memcpy(BUF, &size, LENLEN);
+	FMemory::Memcpy(BUF + FRONTLEN, Body, BodySize);
 
 	do {
 		bool successful = ConnectionSocket->Send((uint8*)BUF, size, sent);
@@ -70,12 +70,12 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, wchar_t B
 
 template <typename T>
 void UBigNantoGameInstance::DataAddCopy(char * source, T* get, int size, int& sum) {
-	memcpy(source + sum, get, size);
+	FMemory::Memcpy(source + sum, get, size);
 	sum += size;
 }
 template <typename T>
 void UBigNantoGameInstance::DataAddGet(T* source, char* get, int size, int& sum) {
-	memcpy(source, get + sum, size);
+	FMemory::Memcpy(source, get + sum, size);
 	sum += size;
 }
 
@@ -88,7 +88,7 @@ void UBigNantoGameInstance::PacketHandler()
 		if (ReadBytes == 0) // error
 			return;
 		if (BufArraySize + ReadBytes < MAX_PACKET_SIZE) {
-			memcpy(BufArray + BufArraySize, ReadData, ReadBytes);
+			FMemory::Memcpy(BufArray + BufArraySize, ReadData, ReadBytes);
 			BufArraySize += ReadBytes;
 		}
 	}

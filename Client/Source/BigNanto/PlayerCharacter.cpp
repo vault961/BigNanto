@@ -80,7 +80,8 @@ APlayerCharacter::APlayerCharacter()
 	if (HitParticleAsset.Succeeded())
 		HitParticle = HitParticleAsset.Object;
 
-	PlayerUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerUI"));
+	// 캐릭터 UI
+	UWidgetComponent* PlayerUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerUI"));
 	static ConstructorHelpers::FClassFinder<UUserWidget> PlayerUIAsset(TEXT("/Game/UMG/PlayerFloatingUI"));
 	if (PlayerUIAsset.Succeeded())
 		PlayerUI->SetWidgetClass(PlayerUIAsset.Class);
@@ -119,7 +120,7 @@ void APlayerCharacter::BeginPlay()
 	PlayerLocation = GetActorLocation();
 	SendDelay = 0;
 
-	UE_LOG(LogTemp, Log, TEXT("My Owner is : %s"), *PlayerUI->GetOwner()->GetName());
+	//UE_LOG(LogTemp, Log, TEXT("My Owner is : %s"), *PlayerUI->GetOwner()->GetName());
 }
 
 void APlayerCharacter::Tick(float DeltaTime)
@@ -163,9 +164,9 @@ void APlayerCharacter::Tick(float DeltaTime)
 		SendDelay += 1;
 		if (SendDelay == 3) {
 
-			memcpy(body, &PlayerLocation.Y, sizeof(PlayerLocation.Y));
-			memcpy(body + 4, &PlayerLocation.Z, sizeof(PlayerLocation.Z));
-			memcpy(body + 8, &PlayerDir, sizeof(char));
+			FMemory::Memcpy(body, &PlayerLocation.Y, sizeof(PlayerLocation.Y));
+			FMemory::Memcpy(body + 4, &PlayerLocation.Z, sizeof(PlayerLocation.Z));
+			FMemory::Memcpy(body + 8, &PlayerDir, sizeof(char));
 			GameInstance->SendMessage(PACKET_TYPE::UPDATELOCATION, body, 9);
 			SendDelay = 0;
 		}
@@ -244,6 +245,7 @@ void APlayerCharacter::BeginOverlap(UPrimitiveComponent * OverlappedComponent, A
 			{
 				// 피격 함수 호출
 				AttackHit(OverlappedWeapon);
+				OverlappedWeapon->bIsActive = false;
 			}
 			AWeapon_MagicWand* const OverlappedAbility = Cast<AWeapon_MagicWand>(OverlappedWeapon);
 			if (OverlappedAbility && OverlappedAbility->bIsIncinerateOn)
