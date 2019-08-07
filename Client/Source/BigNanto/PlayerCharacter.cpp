@@ -220,7 +220,9 @@ void APlayerCharacter::UpdateLocation(FVector New, uint8 Dir)
 {
 	NewLocation = New;
 	NewDir = Dir;
-	//UE_LOG(LogTemp, Log, TEXT("PosY : %f, PosZ : %f"), NewLocation.Y, NewLocation.Z);
+
+	//if(!IsMine)
+	//	UE_LOG(LogTemp, Log, TEXT("PosY : %f, PosZ : %f"), NewLocation.Y, NewLocation.Z);
 }
 
 void APlayerCharacter::UpdateStatus()
@@ -322,8 +324,8 @@ void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 			// 나 일경우, defenthit 애니메이션 전송
 			if (IsMine)
 			{
-				anibody[0] = (char)ECharacterAction::EA_DefendHit;
-				GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
+				//anibody[0] = (char)ECharacterAction::EA_DefendHit;
+				//GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, anibody, 1);
 			}
 
 			AnimInstance->PlayDefendHit();
@@ -345,14 +347,14 @@ void APlayerCharacter::AbilityHit(AWeapon_MagicWand * OverlappedAbility)
 void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 {
 	// 나 일경우 Hit 애니메이션 전송, hit damage 처리
-	if (IsMine)
+	//if (IsMine)
 	{
 		DamagePercent += HitDamage;
 
 		// 공격 받은 방향으로 넉백
 		LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
 
-		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
+		//GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
 
 	}
 

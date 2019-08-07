@@ -100,12 +100,16 @@ void UBigNantoGameInstance::PacketHandler()
 
 		Len = *(wchar_t*)targetArray;
 		if (BufArraySize >= Len) {
+		
 
 			Packet packet((PACKET_TYPE)*(char*)(targetArray+ LENLEN + USERLEN), *(uint32*)(targetArray + LENLEN), targetArray + FRONTLEN, Len);
 
 			PacketProcess(packet);
 			sumLen += Len;
 			BufArraySize -= Len;
+
+			GEngine->AddOnScreenDebugMessage(-1, 0.3f, FColor::Yellow, TEXT("packet recieved!"));
+
 		}
 		else {
 			break;

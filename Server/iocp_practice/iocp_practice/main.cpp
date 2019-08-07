@@ -12,7 +12,7 @@ extern WSAEVENT OrderQueueEvent;
 extern RWLock UserMapLock;
 extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
-extern std::map<SOCKET, User*> UserMap;
+extern std::unordered_map<SOCKET, User*> UserMap;
 
 
 void OrderQueueThread() {
@@ -20,11 +20,22 @@ void OrderQueueThread() {
 		WaitForSingleObject(OrderQueueEvent, INFINITE);
 		while (!g_OrderQueue.empty()) {
 			SentInfo temp(g_OrderQueue.Front());
+			BROADCAST_MODE BMode = temp.BMode;
 			g_OrderQueue.Pop();
 			
 			UserMapLock.ReadLock();
-			for (auto it = UserMap.begin();it != UserMap.end(); it++)
-				(it->second)->PushAndSend(temp);
+			for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
+				switch (BMode) {
+				case BROADCAST_MODE::ALL:
+					(it->second)->PushAndSend(temp);
+					break;
+				case BROADCAST_MODE::EXCEPTME:
+					if ((it->second)->ClientSocket.Socket != temp.Sp.get()->UserID)
+						(it->second)->PushAndSend(temp);
+					break;
+				}
+				printf("%d : %d\n", it->first, it->second->ClientSocket.WaitingQueue.Size());
+			}
 			UserMapLock.ReadUnLock();
 		}
 	}
@@ -42,7 +53,7 @@ unsigned int __stdcall ServerWorkerThread(LPVOID CompletionPortID) {
 		ret = GetQueuedCompletionStatus(CompletionPort, &BytesTransferred, (LPDWORD)&PerHandleData, (LPOVERLAPPED*)&RecvData, INFINITE);
 		if (BytesTransferred == 0) {
 			char empty[1]{ 0 };
-			auto temppacket = make_shared<Packet>(PACKET_TYPE::LOGOUT, FRONTLEN+1, PerHandleData->Socket, empty);
+			auto temppacket = make_shared<Packet>(PACKET_TYPE::LOGOUT, FRONTLEN+1, PerHandleData->Socket, empty, BROADCAST_MODE::EXCEPTME);
 			SentInfo temp(temppacket);
 			// broadcast
 			g_OrderQueue.Push(temp);

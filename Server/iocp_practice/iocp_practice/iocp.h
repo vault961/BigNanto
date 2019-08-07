@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <queue>
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <functional>
 #pragma comment (lib, "Ws2_32.lib")
@@ -38,6 +38,12 @@ enum class PACKET_TYPE {
 	NAMECHECK,
 	LOGOUT,
 };
+enum class BROADCAST_MODE {
+	ALL,
+	EXCEPTME,
+	ONLYME,
+};
+
 typedef struct _PER_HANDLE_DATA {
 	SOCKET Socket;
 	SOCKADDR_IN ClientAddr;
@@ -50,10 +56,13 @@ public:
 	SOCKET UserID;
 	wchar_t Len;
 	char Body[MAX_PACKET_SIZE];
-	Packet(PACKET_TYPE myType, wchar_t myLen, SOCKET myIdx, char * myBody) {
+	BROADCAST_MODE BMode;
+
+	Packet(PACKET_TYPE myType, wchar_t myLen, SOCKET myIdx, char * myBody, BROADCAST_MODE Mode) {
 		Type = myType;
 		UserID = myIdx;
 		Len = myLen;
+		BMode = Mode;
 		memcpy(Body + FRONTLEN, myBody, myLen - FRONTLEN);
 		memcpy(Body + LENLEN + USERLEN, &Type, TYPELEN);
 		memcpy(Body + LENLEN, &UserID, USERLEN);
@@ -109,6 +118,7 @@ public:
 	bool empty();
 	T& Pop();
 	T& Front();
+	int Size();
 private:
 	std::queue<T> queue;
 	RWLock lock;
@@ -121,7 +131,7 @@ public:
 	unsigned int Sended;
 	unsigned int MaxLen;
 	std::shared_ptr<Packet> Sp;
-
+	BROADCAST_MODE BMode;
 	SentInfo() {
 
 	}
@@ -129,6 +139,7 @@ public:
 		Sp = Sr;
 		Sended = 0;
 		MaxLen = Sp.get()->Len;
+		BMode = Sp.get()->BMode;
 	}
 };
 
@@ -203,7 +214,7 @@ extern OrderQueue<SentInfo> g_OrderQueue;
 extern RWLock UserMapLock;
 extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
-extern std::map<SOCKET, User*> UserMap;
+extern std::unordered_map<SOCKET, User*> UserMap;
 
 User& GetUser(SOCKET idx);
 void CompressArrays(SOCKET i);
@@ -255,3 +266,11 @@ T& OrderQueue<T>::Front() {
 	return front;
 }
 
+template <typename T>
+int OrderQueue<T>::Size() {
+	lock.ReadLock();
+	int size = queue.size();
+	lock.ReadUnLock();
+
+	return size;
+}

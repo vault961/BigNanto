@@ -7,7 +7,7 @@ WSAEVENT OrderQueueEvent;
 RWLock UserMapLock;
 SOCKET ListenSocket;
 HANDLE CompletionPort;
-std::map<SOCKET, User*> UserMap;
+std::unordered_map<SOCKET, User*> UserMap;
 using namespace std;
 
 void AddSocket(SOCKET Socket) {
@@ -65,7 +65,7 @@ void User::GetOthersInfo() {
 			DataAddCopy(source, fromuser->Name, namelen, sum);
 
 
-			auto ko = make_shared<Packet>(PACKET_TYPE::PLAYERSPAWN, sum+FRONTLEN, it->first, source);
+			auto ko = make_shared<Packet>(PACKET_TYPE::PLAYERSPAWN, sum+FRONTLEN, it->first, source, BROADCAST_MODE::ONLYME);
 			SentInfo temp(ko);
 			PushAndSend(temp);
 		}
@@ -131,7 +131,7 @@ void NameCheckProcess(User& myuser, char * Name, int NameLen) {
 		buf[0] = 0;
 	}
 
-	auto temppacket = make_shared<Packet>(PACKET_TYPE::NAMECHECK, FRONTLEN + 1, myuser.ClientSocket.Socket, buf);
+	auto temppacket = make_shared<Packet>(PACKET_TYPE::NAMECHECK, FRONTLEN + 1, myuser.ClientSocket.Socket, buf, BROADCAST_MODE::ONLYME);
 	SentInfo temp(temppacket);
 	myuser.PushAndSend(temp);
 }
@@ -150,7 +150,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	//printf("%d recieve\n", len);
 
 	if (receivedSize >= len) {
-		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receiveBuffer+USERLEN+LENLEN), len, myuser.ClientSocket.Socket, receiveBuffer + FRONTLEN);
+		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receiveBuffer+USERLEN+LENLEN), len, myuser.ClientSocket.Socket, receiveBuffer + FRONTLEN, BROADCAST_MODE::ALL);
 		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - len); // array resize
 		myuser.ClientSocket.ReceivedBufferSize -= len;
 
@@ -165,6 +165,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 			return;
 			break;
 		case PACKET_TYPE::UPDATELOCATION:
+			temppacket.get()->BMode = BROADCAST_MODE::EXCEPTME;
 			myuser.PosY = *(float*)(temppacket.get()->Body + FRONTLEN);
 			myuser.PosZ = *(float*)(temppacket.get()->Body + FRONTLEN + 4);
 			myuser.Dir = *(temppacket.get()->Body + FRONTLEN + 8);
@@ -177,6 +178,10 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		case PACKET_TYPE::NAMECHECK:
 			NameCheckProcess(myuser, temppacket.get()->Body+FRONTLEN, temppacket.get()->Len-FRONTLEN);
 			return;
+			break;
+		case PACKET_TYPE::UPDATESTATE:
+			temppacket.get()->BMode = BROADCAST_MODE::EXCEPTME;
+
 			break;
 		}
 		
