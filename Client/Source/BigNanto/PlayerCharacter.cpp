@@ -352,7 +352,7 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	{
 		DamagePercent += HitDamage;
 
-		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
+		//GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
 		StopAttack();
 		StopSpecialAbility();
 	}
@@ -360,8 +360,6 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	// 현재행동 중단하고 EHit 상태로 바꿔주기
 	SetCurrentState(ECharacterState::EHit);
 	AnimInstance->PlayGetHit();
-
-
 	
 	// 공격 받은 방향으로 넉백
 	LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
@@ -391,6 +389,9 @@ void APlayerCharacter::Attack()
 
 void APlayerCharacter::StopAttack()
 {
+	if (CurrentState != ECharacterState::EAttack)
+		return;
+
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" StopAttack()"));
 	// 나 일경우 stopattack 신호 보냄.
 	if (IsMine)
