@@ -55,7 +55,11 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 Bo
 	FMemory::Memcpy(BUF + FRONTLEN, Body, BodySize);
 
 	do {
+		//if (Type == PACKET_TYPE::UPDATESTATE)
+		UE_LOG(LogTemp, Error, TEXT("%d %d"), size, sent);
+
 		bool successful = ConnectionSocket->Send(BUF, size, sent);
+		
 
 		if (!successful) {
 			UE_LOG(LogTemp, Error, TEXT("Message can't send!!!!!!!!"));
@@ -210,23 +214,23 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	{
 		if (packet.userID != MyID) {
 			APlayerCharacter* User = PlayerList[packet.userID];
-			switch (*(ECharacterAction*)packet.body) {
-			case ECharacterAction::EA_Attack:
+			switch (packet.body[0]) {
+			case (char)ECharacterAction::EA_Attack:
 				User->Attack();
 				break;
-			case ECharacterAction::EA_Defend:
+			case (char)ECharacterAction::EA_Defend:
 				break;
-			case ECharacterAction::EA_DefendHit:
+			case (char)ECharacterAction::EA_DefendHit:
 				break;
-			case ECharacterAction::EA_Hit:
+			case (char)ECharacterAction::EA_Hit:
 				break;
-			case ECharacterAction::EA_Jump:
+			case (char)ECharacterAction::EA_Jump:
 				User->DoJump();
 				break;
-			case ECharacterAction::EA_StopAttack:
+			case (char)ECharacterAction::EA_StopAttack:
 				User->StopAttack();
 				break;
-			case ECharacterAction::EA_Die:
+			case (char)ECharacterAction::EA_Die:
 				User->Destroy();
 				break;
 			}

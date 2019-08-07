@@ -2,25 +2,26 @@
 
 
 #include "PlayerCharacter.h"
-#include "Engine/Engine.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "Animation/AnimInstance.h"
+#include "BigNantoGameInstance.h"
+#include "BigNantoGameModeBase.h"
+#include "BigNantoPlayerController.h"
+#include "CenterViewPawn.h"
+#include "CharacterSpawner.h"
+#include "Components/WidgetComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "PlayerCharacterAnim.h"
-#include "Weapon.h"
-#include "UObject/ConstructorHelpers.h"
-#include "Particles/ParticleSystem.h"
+#include "Engine/Engine.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
+#include "PlayerCharacterAnim.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Weapon.h"
 #include "Weapon_MagicWand.h"
-#include "BigNantoGameInstance.h"
-#include "CharacterSpawner.h"
-#include "CenterViewPawn.h"
-#include "Components/WidgetComponent.h"
-#include "BigNantoPlayerController.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -96,7 +97,7 @@ APlayerCharacter::APlayerCharacter()
 
 APlayerCharacter::~APlayerCharacter()
 {
-	//UE_LOG(LogTemp, Log, TEXT("플레이어 '%s' 소멸자 호출"), *PlayerName);
+	UE_LOG(LogTemp, Log, TEXT("플레이어 '%s' 소멸자 호출"), *PlayerName);
 }
 
 void APlayerCharacter::BeginPlay()
@@ -431,16 +432,20 @@ void APlayerCharacter::StopSpecialAbility()
 
 void APlayerCharacter::Die()
 {
+	// 사망 로그
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"));
+
 	if (IsMine)
 	{
 		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
-		GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
+		if (CenterViewCamera)
+		{
+			GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
+		}
+		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
 
 		anibody=(char)ECharacterAction::EA_Die;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
-
-
 
 		Destroy();
 	}
