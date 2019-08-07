@@ -34,7 +34,7 @@ void OrderQueueThread() {
 						(it->second)->PushAndSend(temp);
 					break;
 				}
-				printf("%d : %d\n", it->first, it->second->ClientSocket.WaitingQueue.Size());
+				//printf("%d : %d\n", it->first, it->second->ClientSocket.WaitingQueue.Size());
 			}
 			UserMapLock.ReadUnLock();
 		}
