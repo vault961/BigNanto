@@ -311,6 +311,7 @@ void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 	// 피격한 캐릭터의 전방 벡터
 	FVector EnemyForwardVector = OverlappedWeapon->WeaponOwner->GetActorForwardVector();
 	//UE_LOG(LogTemp, Log, TEXT("EnemyForwardVector : %s"), *EnemyForwardVector.ToString());
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" AttackHit()"));
 
 	// 적과 나의 벡터 내적
 	// 내적 값이 양수면 적이 내 뒤에 있음, 음수면 적이 내 앞에 있음
@@ -340,6 +341,9 @@ void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 
 void APlayerCharacter::AbilityHit(AWeapon_MagicWand * OverlappedAbility)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" AbiltityHit()"));
+
+
 	FVector EnemyForwardVector = OverlappedAbility->WeaponOwner->GetActorForwardVector();
 	HitandKnockback(EnemyForwardVector, OverlappedAbility->IncinerateDamage);
 }
@@ -389,6 +393,11 @@ void APlayerCharacter::Attack()
 
 void APlayerCharacter::StopAttack()
 {
+	if (AnimInstance)
+	{
+		AnimInstance->bIsAttacking = false;
+	}
+	
 	if (CurrentState != ECharacterState::EAttack)
 		return;
 
@@ -399,11 +408,8 @@ void APlayerCharacter::StopAttack()
 		anibody = ECharacterAction::EA_StopAttack;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, (char*)&anibody, sizeof(ECharacterAction));
 	}
-
-	if (AnimInstance)
-	{
-		AnimInstance->bIsAttacking = false;
-	}
+	
+	
 }
 
 void APlayerCharacter::SpecialAbility()

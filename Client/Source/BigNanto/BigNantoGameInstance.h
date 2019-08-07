@@ -80,7 +80,7 @@ public:
 	UPROPERTY()
 	class ACenterViewPawn* CenterViewPawn;
 	
-	class APlayerCharacter* PlayerList[280];
+	TMap<uint32, class APlayerCharacter*> PlayerList;
 	class APlayerController* PlayerController;
 	class ABigNantoGameModeBase* GameModeBase;
 	FVector NewPosition;

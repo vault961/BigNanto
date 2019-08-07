@@ -153,6 +153,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receiveBuffer+USERLEN+LENLEN), len, myuser.ClientSocket.Socket, receiveBuffer + FRONTLEN, BROADCAST_MODE::ALL);
 		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - len); // array resize
 		myuser.ClientSocket.ReceivedBufferSize -= len;
+		//printf("%d recived type: %d\n", myuser.ClientSocket.Socket, temppacket->Type);
 
 		switch (temppacket.get()->Type) {
 		case PACKET_TYPE::PLAYERSPAWN:
