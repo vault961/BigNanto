@@ -467,15 +467,16 @@ void APlayerCharacter::Die()
 			World->SpawnActor<ARingOutExplosion>(ARingOutExplosion::StaticClass(), GetActorTransform());
 		}
 
+		anibody = (char)ECharacterAction::EA_Die;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
+
 		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
 		if (CenterViewCamera)
 		{
 			GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
 		}
-		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
 
-		anibody=(char)ECharacterAction::EA_Die;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
+		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
 
 		Destroy();
 	}
