@@ -87,6 +87,7 @@ public:
 	// 플레이어 이름
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterInfo)
 	FString PlayerName;
+	wchar_t namearr[11];
 
 	// 캐릭터 데미지 퍼센트
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterInfo)
@@ -112,8 +113,9 @@ public:
 	void SetWeaponActive(bool bIsActive);
 
 	// 피격 파티클
-	UPROPERTY()
 	UParticleSystem* HitParticle;
+
+	// 사망 파티클(페이퍼2D)
 	
 	// 캐릭터 현재상태
 	UPROPERTY(VisibleAnywhere, Category = CharacterInfo)

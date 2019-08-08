@@ -3,6 +3,7 @@
 
 #include "PlayerCharacter.h"
 #include "Animation/AnimInstance.h"
+#include "RingOutExplosion.h"
 #include "BigNantoGameInstance.h"
 #include "BigNantoGameModeBase.h"
 #include "BigNantoPlayerController.h"
@@ -81,6 +82,11 @@ APlayerCharacter::APlayerCharacter()
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> HitParticleAsset(TEXT("/Game/StarterContent/Particles/P_Explosion"));
 	if (HitParticleAsset.Succeeded())
 		HitParticle = HitParticleAsset.Object;
+
+	// 사망 파티클
+	//static ConstructorHelpers::FClassFinder<AActor> RingOutParitcleAsset(TEXT("/Game/Blueprints/RingOutEffect"));
+	//if (RingOutParitcleAsset.Class)
+	//	RingOutParticle = RingOutParitcleAsset.Class;
 
 	// 캐릭터 UI
 	PlayerUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerUI"));
@@ -400,13 +406,8 @@ void APlayerCharacter::Attack()
 
 void APlayerCharacter::StopAttack()
 {
-	if (AnimInstance)
-	{
-		AnimInstance->bIsAttacking = false;
-	}
-	
-	if (CurrentState != ECharacterState::EAttack)
-		return;
+	//if (CurrentState != ECharacterState::EAttack)
+	//	return;
 
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" StopAttack()"));
 	// 나 일경우 stopattack 신호 보냄.
@@ -416,6 +417,10 @@ void APlayerCharacter::StopAttack()
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 	}
 	
+	if (AnimInstance)
+	{
+		AnimInstance->bIsAttacking = false;
+	}
 	
 }
 
@@ -456,21 +461,23 @@ void APlayerCharacter::Die()
 
 	if (IsMine)
 	{
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			World->SpawnActor<ARingOutExplosion>(ARingOutExplosion::StaticClass(), GetActorTransform());
+		}
+
 		anibody = (char)ECharacterAction::EA_Die;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
-
 
 		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
 		if (CenterViewCamera)
 		{
 			GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
 		}
-		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
 
-		
+		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
 
 		Destroy();
 	}
-
-
 }
