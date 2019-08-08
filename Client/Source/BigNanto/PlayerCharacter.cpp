@@ -363,7 +363,7 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	{
 		DamagePercent += HitDamage;
 
-		//GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
+		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
 		StopAttack();
 		StopSpecialAbility();
 	}

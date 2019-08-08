@@ -188,7 +188,11 @@ public:
 	FILE *fp;
 
 	Log() {
-		fp = fopen("log.txt", "a");
+		SYSTEMTIME cur_time;
+		GetLocalTime(&cur_time);
+		char name[30];
+		sprintf(name, "[%02d%02d%02d]log.txt", cur_time.wHour, cur_time.wMinute, cur_time.wSecond);
+		fp = fopen(name, "a");
 	}
 	
 	void write(char *format, ...) {

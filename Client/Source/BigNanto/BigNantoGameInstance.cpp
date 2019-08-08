@@ -45,6 +45,7 @@ void UBigNantoGameInstance::Shutdown()
 
 void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 BodySize)
 {
+	
 	uint32 size = BodySize + FRONTLEN;
 	int32 sent = 0;
 
@@ -56,6 +57,7 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 Bo
 
 	do {
 		bool successful = ConnectionSocket->Send(BUF, size, sent);
+	//	UE_LOG(LogTemp, Error, TEXT("%d %d"),Type,size);
 
 		if (!successful) {
 			UE_LOG(LogTemp, Error, TEXT("Message can't send!!!!!!!!"));
@@ -194,39 +196,40 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		if(!PlayerList.Contains(packet.userID))
 			PlayerList.Add(packet.userID, Character);
 		//PlayerList[packet.userID] = Character;
-		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName)) + '\0';
+		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName));
 		
 		break;
 	}
 	case PACKET_TYPE::UPDATELOCATION:
 	{
 		APlayerCharacter* User = PlayerList[packet.userID];
-		NewPosition.Y = *(float*)packet.body;
-		NewPosition.Z = *(float*)(packet.body + 4);
-		User->UpdateLocation(NewPosition, (uint8)*(char*)(packet.body + 8));
+		FVector fv(0, *(float*)packet.body, *(float*)(packet.body + 4));
+		User->UpdateLocation(fv, (uint8)*(char*)(packet.body + 8));
+		UE_LOG(LogTemp, Error, TEXT("userid:%d y:%f z:%f"),packet.userID, fv.Y, fv.Z);
+
 		break;
 	}
 	case PACKET_TYPE::UPDATESTATE:
 	{
 		if (packet.userID != MyID) {
 			APlayerCharacter* User = PlayerList[packet.userID];
-			switch (*(ECharacterAction*)packet.body) {
-			case ECharacterAction::EA_Attack:
+			switch (packet.body[0]) {
+			case (char)ECharacterAction::EA_Attack:
 				User->Attack();
 				break;
-			case ECharacterAction::EA_Defend:
+			case (char)ECharacterAction::EA_Defend:
 				break;
-			case ECharacterAction::EA_DefendHit:
+			case (char)ECharacterAction::EA_DefendHit:
 				break;
-			case ECharacterAction::EA_Hit:
+			case (char)ECharacterAction::EA_Hit:
 				break;
-			case ECharacterAction::EA_Jump:
+			case (char)ECharacterAction::EA_Jump:
 				User->DoJump();
 				break;
-			case ECharacterAction::EA_StopAttack:
+			case (char)ECharacterAction::EA_StopAttack:
 				User->StopAttack();
 				break;
-			case ECharacterAction::EA_Die:
+			case (char)ECharacterAction::EA_Die:
 				User->Destroy();
 				break;
 			}
@@ -237,7 +240,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	{
 		APlayerCharacter* User = PlayerList[packet.userID];
 		User->Destroy();
-		PlayerList[packet.userID] = NULL;
+		PlayerList.Remove(packet.userID);
+
 		break;
 	}
 	}

@@ -146,19 +146,18 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	memcpy(receivedBuffer + receivedSize, source, retValue);
 	receivedSize += retValue;
 
-	if (receivedSize < FRONTLEN)   // 헤더는 무조건 있어야됨
-		return;
 
 	int len = (int)*(wchar_t*)receivedBuffer;
-	logger.write("[1]id:%d len:%d recvSize:%d", myuser.ClientSocket.Socket, len, receivedSize);
+	logger.write("RecvProcess() before make packet, id:%d len:%d recvSize:%d retvalue:%d", myuser.ClientSocket.Socket, len, receivedSize, retValue);
 
 	//printf("%d %d recieve\n", len);
+	int sumlen = 0;
 
-	if (receivedSize >= len) {
-		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receivedBuffer +USERLEN+LENLEN), len, myuser.ClientSocket.Socket, receivedBuffer + FRONTLEN, BROADCAST_MODE::ALL);
-		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - len); // array resize
-		myuser.ClientSocket.ReceivedBufferSize -= len;
-		logger.write("[2]id:%d len:%d recvSize:%d", myuser.ClientSocket.Socket, len, receivedSize);
+	while (receivedSize >= FRONTLEN && receivedSize >= len) {
+		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receivedBuffer +USERLEN+LENLEN + sumlen), len, myuser.ClientSocket.Socket, receivedBuffer + FRONTLEN, BROADCAST_MODE::ALL);
+		
+		receivedSize -= len;
+		logger.write("RecvProcess() after make packet, id:%d len:%d recvSize:%d retvalue:%d", myuser.ClientSocket.Socket, len, receivedSize, retValue);
 
 
 		switch (temppacket.get()->Type) {
@@ -176,6 +175,9 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 			myuser.PosY = *(float*)(temppacket.get()->Body + FRONTLEN);
 			myuser.PosZ = *(float*)(temppacket.get()->Body + FRONTLEN + 4);
 			myuser.Dir = *(temppacket.get()->Body + FRONTLEN + 8);
+			logger.write("UpdataeLocation id:%d PosY:%f PosZ:%f Dir:%d", myuser.ClientSocket.Socket, myuser.PosY, myuser.PosZ, myuser.Dir);
+
+
 			//printf("%f %f\n", *(float*)(temppacket.get()->Body + FRONTLEN), *(float*)(temppacket.get()->Body+FRONTLEN +4  ));
 			break;
 		case PACKET_TYPE::UPDATEDMG:
@@ -197,7 +199,12 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		// broadcast
 		g_OrderQueue.Push(temp);
 		SetEvent(OrderQueueEvent);
+
+		sumlen += len;
+		len = (int)*(wchar_t*)(receivedBuffer+sumlen);
 	}
+
+	Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - sumlen); // array resize
 
 }
 void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
@@ -205,7 +212,7 @@ void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 	DWORD Flags;
 	WSABUF wbuf;
 
-
+	//logger.write("Recver Work() %d %d", Socket, bytes);
 	User& myuser = GetUser(Socket);
 	RecvProcess(Buffer, bytes, myuser);
 
@@ -213,6 +220,8 @@ void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 	BufferLen = MAX_BUFFER_SIZE;
 	wbuf.buf = Buffer;
 	wbuf.len = BufferLen;
+
+
 	WSARecv(Socket, &wbuf, 1, NULL, &Flags, this, NULL);
 }
 
@@ -223,10 +232,15 @@ void User::SendFront(Sender* overlapped) {
 		return;
 	}
 	
+
 	SentInfo &target = ClientSocket.WaitingQueue.Front();
+
+	//logger.write("SendFront() sended:%d type:%d", target.Sended, target.Sp.get()->Body[USERLEN+LENLEN]);
 	wBuf.buf = target.Sp.get()->Body;
 	wBuf.len = target.MaxLen;
 	overlapped->sendinfo = target;
+
+	
 	WSASend(ClientSocket.Socket, &wBuf, 1, NULL, 0, overlapped, NULL);
 }
 
@@ -236,6 +250,8 @@ void Sender::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 	WSABUF wBuf;
 	sendinfo.Sended += bytes;
 
+	//logger.write("Send Work() %d %d", Socket, bytes);
+
 	if (sendinfo.Sended >= sendinfo.MaxLen) {
 		myuser.ClientSocket.WaitingQueue.Pop();
 		myuser.SendFront(this);
@@ -244,6 +260,7 @@ void Sender::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 	{
 		wBuf.buf = sendinfo.Sp.get()->Body + sendinfo.Sended;
 		wBuf.len = sendinfo.MaxLen - sendinfo.Sended;
+		
 		WSASend(myuser.ClientSocket.Socket, &wBuf, 1, NULL, 0, this, NULL);
 	}
 }

@@ -44,6 +44,7 @@ public:
 	}
 };
 
+
 UCLASS()
 class BIGNANTO_API UBigNantoGameInstance : public UGameInstance
 {
@@ -109,3 +110,5 @@ public:
 	void DataAddGet(T* source, char* get, int size, int& sum);
 
 };
+
+
