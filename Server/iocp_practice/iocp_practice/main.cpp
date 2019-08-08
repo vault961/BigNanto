@@ -134,17 +134,37 @@ int main(void) {
 
 	while (1) {
 		RemoteLen = sizeof(saRemote);
+		
 		Accept = accept(ListenSocket, (SOCKADDR*)&saRemote, &RemoteLen);
 
 		UserMapLock.ReadLock();
-		if (UserMap.size() >= WSA_MAXIMUM_WAIT_EVENTS) {
+		if (UserMap.size() >= WSA_MAXIMUM_WAIT_EVENTS-1) {
 			printf("too many connections");
 			closesocket(Accept);
-			break;
+			continue;
 		}
+		int flag = 0;
+		for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
+			if (it->second->IP.S_un.S_un_b.s_b1 == saRemote.sin_addr.S_un.S_un_b.s_b1) {
+				if (it->second->IP.S_un.S_un_b.s_b2 == saRemote.sin_addr.S_un.S_un_b.s_b2) {
+					if (it->second->IP.S_un.S_un_b.s_b3 == saRemote.sin_addr.S_un.S_un_b.s_b3) {
+						if (it->second->IP.S_un.S_un_b.s_b4 == saRemote.sin_addr.S_un.S_un_b.s_b4) {
+							flag = 1;
+							break;
+						}
+					}
+				}
+			}
+		}
+		
 		UserMapLock.ReadUnLock();
 
-		AddSocket(Accept);
+		if (flag == 1) {
+			printf("동일 ip접속\n");
+			closesocket(Accept);
+			continue;
+		}
+		AddSocket(Accept, saRemote);
 
 		PerHandleData = (LPPER_HANDLE_DATA)malloc(sizeof(PER_HANDLE_DATA));
 		PerHandleData->Socket = Accept;

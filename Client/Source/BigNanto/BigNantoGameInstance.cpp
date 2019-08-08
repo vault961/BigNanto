@@ -130,9 +130,11 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	case PACKET_TYPE::NAMECHECK:
 	{
 		// 중복된 이름없을 때
-		if (packet.body[0] == 0) { 
+		switch (packet.body[0]) {
+		case (char)ERRORCODE::NOTERROR:
+		{
 			GameModeBase->RemoveAllWidget();
-			
+
 			// 내 ID 받기
 			MyID = packet.userID;
 
@@ -148,9 +150,21 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			// 서버에게 내 캐릭터 요청
 			SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);
 		}
-		else { // 중복된 이름 있을 때
-			UE_LOG(LogTemp, Warning, TEXT("중복된 이름입니다"));
+			break;
+		case (char)ERRORCODE::TOOLONG:
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT(" 최대 10자 입니다."));
+
+			break;
+		case (char)ERRORCODE::ALREADYNAME:
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT(" 중복된 이름입니다."));
+
+			break;
+		case (char)ERRORCODE::NOTENGLISH:
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT(" 영어로만 입력해주세요"));
+
+			break;
 		}
+		
 		break;
 	}
 	case PACKET_TYPE::PLAYERSPAWN:
