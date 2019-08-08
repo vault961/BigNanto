@@ -469,15 +469,5 @@ void APlayerCharacter::Die()
 		Destroy();
 	}
 
-<<<<<<< HEAD
-}
 
-void APlayerCharacter::BeginDestroy()
-{
-	Super::BeginDestroy();
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("플레이어 : ") + PlayerName + TEXT("으앙 나 파괴됨"));
 }
-
-=======
-}
->>>>>>> 7b19dae35dee39ebef0ae592f0796a88c387e9ce

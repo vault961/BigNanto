@@ -135,8 +135,7 @@ void NameCheckProcess(User& myuser, char * Name, int NameLen) {
 	}
 
 	auto temppacket = make_shared<Packet>(PACKET_TYPE::NAMECHECK, FRONTLEN + 1, myuser.ClientSocket.Socket, buf, BROADCAST_MODE::ONLYME);
-	SentInfo temp(temppacket);
-	myuser.PushAndSend(temp);
+	
 }
 
 void RecvProcess(char * source, int retValue, User& myuser) {
