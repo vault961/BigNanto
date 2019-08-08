@@ -170,15 +170,13 @@ shared_ptr<Packet> NameCheckProcess(User& myuser, char * Name, int NameLen) {
 	//myuser.PushAndSend(temp);
 }
 
-void RecvProcess(char * source, int retValue, User& myuser) {
+int RecvProcess(char * source, int retValue, User& myuser) {
 	char * receivedBuffer = myuser.ClientSocket.ReceiveBuffer;
 	int& receivedSize = myuser.ClientSocket.ReceivedBufferSize;
 
 	memcpy(receivedBuffer + receivedSize, source, retValue);
 	receivedSize += retValue;
-
 	
-	//int len = (int)*(wchar_t*)receivedBuffer;
 	//logger.write("RecvProcess() before make packet, id:%d len:%d recvSize:%d retvalue:%d", myuser.ClientSocket.Socket, len, receivedSize, retValue);
 	int len = 0;
 	int sumlen = 0;
@@ -195,10 +193,10 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 			SetEvent(OrderQueueEvent);
 
 			//close socket
-			printf("close!");
+			printf("get out! %d\n", myuser.ClientSocket.Socket);
 			closesocket(myuser.ClientSocket.Socket);
 			CompressArrays(myuser.ClientSocket.Socket);
-			return;
+			return -1;
 		}
 		PACKET_TYPE Type = (PACKET_TYPE)*(receivedBuffer + USERLEN + LENLEN + sumlen);
 		char * Body = receivedBuffer + FRONTLEN + sumlen;
@@ -246,7 +244,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	for (int k = 0; k < receivedSize; k++)
 		receivedBuffer[k + sumlen] = receivedBuffer[k];
 
-
+	return 1;
 }
 void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 	SOCKET Socket = PerHandleData->Socket;
@@ -255,7 +253,9 @@ void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 
 	//logger.write("Recver Work() %d %d", Socket, bytes);
 	User& myuser = GetUser(Socket);
-	RecvProcess(Buffer, bytes, myuser);
+	if (RecvProcess(Buffer, bytes, myuser) == -1) {
+		return;
+	}
 
 	Flags = 0;
 	BufferLen = MAX_BUFFER_SIZE;
