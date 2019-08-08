@@ -121,13 +121,20 @@ shared_ptr<Packet> NameCheckProcess(User& myuser, char * Name, int NameLen) {
 		buf[0] = (char)ERRORCODE::TOOLONG;
 	}
 	else {
-		memcpy(ReqName, Name, NameLen);
-		for (int i = 0; i < strlen(ReqName); ++i)
-		{
-			if ('a' > ReqName[i] || ReqName[i] > 'z') {
-				buf[0] = (char)ERRORCODE::NOTENGLISH;
-				flag = false;
-				break;
+		if (NameLen <= 1) {
+			printf("too short name");
+			flag = false;
+			buf[0] = (char)ERRORCODE::TOOSHORT;
+		}
+		else {
+			memcpy(ReqName, Name, NameLen);
+			for (int i = 0; i < strlen(ReqName); ++i)
+			{
+				if ('a' > ReqName[i] || ReqName[i] > 'z') {
+					buf[0] = (char)ERRORCODE::NOTENGLISH;
+					flag = false;
+					break;
+				}
 			}
 		}
 	}

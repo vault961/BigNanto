@@ -163,6 +163,10 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT(" 영어로만 입력해주세요"));
 
 			break;
+		case (char)ERRORCODE::TOOSHORT:
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT(" 1자 이상으로 입력해주세요"));
+
+			break;
 		}
 		
 		break;
