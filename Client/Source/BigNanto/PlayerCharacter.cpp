@@ -292,7 +292,7 @@ void APlayerCharacter::DoJump()
 	else
 	{
 		SetCurrentState(ECharacterState::EJump);
-			LaunchCharacter(FVector(0.f, 0.f, 1.f) * GetCharacterMovement()->JumpZVelocity, false, true);
+		LaunchCharacter(FVector(0.f, 0.f, 1.f) * GetCharacterMovement()->JumpZVelocity, false, true);
 	}
 	
 }
@@ -363,7 +363,6 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	if (IsMine)
 	{
 		DamagePercent += HitDamage;
-
 		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
 		StopAttack();
 		StopSpecialAbility();
@@ -372,9 +371,10 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	// 현재행동 중단하고 EHit 상태로 바꿔주기
 	SetCurrentState(ECharacterState::EHit);
 	AnimInstance->PlayGetHit();
-	
-	// 공격 받은 방향으로 넉백
 	LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
+
+	// 공격 받은 방향으로 넉백
+	
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorTransform());
 }
 void APlayerCharacter::Attack()
@@ -451,3 +451,10 @@ void APlayerCharacter::Die()
 	}
 
 }
+
+void APlayerCharacter::BeginDestroy()
+{
+	Super::BeginDestroy();
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("플레이어 : ") + PlayerName + TEXT("으앙 나 파괴됨"));
+}
+

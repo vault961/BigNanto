@@ -146,7 +146,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	memcpy(receivedBuffer + receivedSize, source, retValue);
 	receivedSize += retValue;
 
-
+	
 	int len = (int)*(wchar_t*)receivedBuffer;
 	logger.write("RecvProcess() before make packet, id:%d len:%d recvSize:%d retvalue:%d", myuser.ClientSocket.Socket, len, receivedSize, retValue);
 
@@ -154,10 +154,15 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	int sumlen = 0;
 
 	while (receivedSize >= FRONTLEN && receivedSize >= len) {
-		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receivedBuffer +USERLEN+LENLEN + sumlen), len, myuser.ClientSocket.Socket, receivedBuffer + FRONTLEN, BROADCAST_MODE::ALL);
+		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receivedBuffer + USERLEN + LENLEN + sumlen), len, myuser.ClientSocket.Socket, receivedBuffer + FRONTLEN + sumlen , BROADCAST_MODE::ALL);
 		
 		receivedSize -= len;
-		logger.write("RecvProcess() after make packet, id:%d len:%d recvSize:%d retvalue:%d", myuser.ClientSocket.Socket, len, receivedSize, retValue);
+		sumlen += len;
+		
+
+
+		//Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize); // array resize
+		logger.write("RecvProcess() after make packet, id:%d len:%d recvSize:%d sumlen:%d", myuser.ClientSocket.Socket, len, receivedSize, sumlen);
 
 
 		switch (temppacket.get()->Type) {
@@ -167,8 +172,9 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		case PACKET_TYPE::ENTER:
 			// do not broadcast
 			printf("user enter!\n");
+			temppacket.get()->BMode = BROADCAST_MODE::ONLYME;
+
 			EnterProcess(myuser, temppacket);
-			return;
 			break;
 		case PACKET_TYPE::UPDATELOCATION:
 			temppacket.get()->BMode = BROADCAST_MODE::EXCEPTME;
@@ -181,17 +187,20 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 			//printf("%f %f\n", *(float*)(temppacket.get()->Body + FRONTLEN), *(float*)(temppacket.get()->Body+FRONTLEN +4  ));
 			break;
 		case PACKET_TYPE::UPDATEDMG:
+			temppacket.get()->BMode = BROADCAST_MODE::EXCEPTME;
 			myuser.Damage = *(float*)(temppacket.get()->Body + FRONTLEN);
-			return;
 			break;
 		case PACKET_TYPE::NAMECHECK:
+			temppacket.get()->BMode = BROADCAST_MODE::ONLYME;
 			NameCheckProcess(myuser, temppacket.get()->Body+FRONTLEN, temppacket.get()->Len-FRONTLEN);
-			return;
 			break;
 		case PACKET_TYPE::UPDATESTATE:
 			temppacket.get()->BMode = BROADCAST_MODE::EXCEPTME;
-
+			if (temppacket.get()->Body[FRONTLEN] == (char)ECharacterAction::EA_Die) {
+				memset(myuser.Name, 0, sizeof(myuser.Name));
+			}
 			break;
+	
 		}
 		
 
@@ -200,11 +209,14 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		g_OrderQueue.Push(temp);
 		SetEvent(OrderQueueEvent);
 
-		sumlen += len;
-		len = (int)*(wchar_t*)(receivedBuffer+sumlen);
+		
+		len = (int)*(wchar_t*)(receivedBuffer + sumlen);
+
+		logger.write("RecvProcess() after(2) make packet, id:%d len:%d recvSize:%d sumlen:%d", myuser.ClientSocket.Socket, len, receivedSize, sumlen);
 	}
 
-	Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - sumlen); // array resize
+	for (int k = 0; k < receivedSize; k++)
+		receivedBuffer[k + sumlen] = receivedBuffer[k];
 
 }
 void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {

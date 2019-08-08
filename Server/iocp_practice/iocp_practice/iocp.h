@@ -38,6 +38,20 @@ enum class PACKET_TYPE {
 	NAMECHECK,
 	LOGOUT,
 };
+enum class ECharacterAction
+{
+	EA_DefendHit,
+	EA_StopAttack,
+	EA_Attack,
+	EA_Defend,
+	EA_Hit,
+	EA_Jump,
+	EA_SpecialAbility,
+	EA_Die,
+	EA_Move,
+	EA_StopMove,
+
+};
 enum class BROADCAST_MODE {
 	ALL,
 	EXCEPTME,

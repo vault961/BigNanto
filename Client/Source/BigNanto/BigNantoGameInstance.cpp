@@ -216,25 +216,30 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	{
 		if (packet.userID != MyID) {
 			APlayerCharacter* User = PlayerList[packet.userID];
-			switch (packet.body[0]) {
-			case (char)ECharacterAction::EA_Attack:
-				User->Attack();
-				break;
-			case (char)ECharacterAction::EA_Defend:
-				break;
-			case (char)ECharacterAction::EA_DefendHit:
-				break;
-			case (char)ECharacterAction::EA_Hit:
-				break;
-			case (char)ECharacterAction::EA_Jump:
-				User->DoJump();
-				break;
-			case (char)ECharacterAction::EA_StopAttack:
-				User->StopAttack();
-				break;
-			case (char)ECharacterAction::EA_Die:
-				User->Destroy();
-				break;
+
+			if (nullptr != User)
+			{
+				switch (packet.body[0]) {
+				case (char)ECharacterAction::EA_Attack:
+					User->Attack();
+					break;
+				case (char)ECharacterAction::EA_Defend:
+					break;
+				case (char)ECharacterAction::EA_DefendHit:
+					break;
+				case (char)ECharacterAction::EA_Hit:
+					break;
+				case (char)ECharacterAction::EA_Jump:
+					User->DoJump();
+					break;
+				case (char)ECharacterAction::EA_StopAttack:
+					User->StopAttack();
+					break;
+				case (char)ECharacterAction::EA_Die:
+					User->Destroy();
+					PlayerList.Remove(packet.userID);
+					break;
+				}
 			}
 		}
 		break;

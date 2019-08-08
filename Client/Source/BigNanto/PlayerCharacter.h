@@ -188,4 +188,6 @@ public:
 	// »ç¸Á
 	UFUNCTION(BlueprintCallable)
 	virtual void Die();
+
+	virtual void BeginDestroy() override;
 };

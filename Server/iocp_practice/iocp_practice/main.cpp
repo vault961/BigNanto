@@ -35,6 +35,10 @@ void OrderQueueThread() {
 					if ((it->second)->ClientSocket.Socket != temp.Sp.get()->UserID)
 						(it->second)->PushAndSend(temp);
 					break;
+				case BROADCAST_MODE::ONLYME:
+					if ((it->second)->ClientSocket.Socket == temp.Sp.get()->UserID)
+						(it->second)->PushAndSend(temp);
+					break;
 				}
 				//printf("%d : %d\n", it->first, it->second->ClientSocket.WaitingQueue.Size());
 			}
