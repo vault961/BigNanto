@@ -23,7 +23,11 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(EditAnywhere)
 	USceneComponent* RootScene;
+
+	UPROPERTY(EditAnywhere)
+	class ACenterViewPawn* CenterViewPawn;
 
 	class UPaperFlipbookComponent* PaperFlipComponent;
 
