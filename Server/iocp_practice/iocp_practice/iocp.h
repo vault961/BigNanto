@@ -276,7 +276,7 @@ User& GetUser(SOCKET idx);
 void CompressArrays(SOCKET i);
 void AddSocket(SOCKET Socket, SOCKADDR_IN Address);
 void Compress(char *source, int len);
-void RecvProcess(char * source, int retValue, User& myuser);
+int RecvProcess(char * source, int retValue, User& myuser);
 void OrderQueueThread();
 void SpawnProcess(User& myuser, std::shared_ptr<Packet>& temppacket, int& len);
 
