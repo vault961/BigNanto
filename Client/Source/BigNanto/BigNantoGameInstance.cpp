@@ -224,6 +224,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	case PACKET_TYPE::UPDATELOCATION:
 	{
 		APlayerCharacter* User = PlayerList[packet.userID];
+		if (nullptr == User)
+			return;
 		FVector fv(0, *(float*)packet.body, *(float*)(packet.body + 4));
 		User->UpdateLocation(fv, (uint8)*(char*)(packet.body + 8));
 		UE_LOG(LogTemp, Error, TEXT("userid:%d y:%f z:%f"),packet.userID, fv.Y, fv.Z);
@@ -233,6 +235,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	case PACKET_TYPE::UPDATEDMG:
 	{
 		APlayerCharacter* User = PlayerList[packet.userID];
+		if (nullptr == User)
+			return;
 		User->DamagePercent = *(float*)packet.body;
 
 		break;
@@ -241,7 +245,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	{
 		if (packet.userID != MyID) {
 			APlayerCharacter* User = PlayerList[packet.userID];
-
+			if (nullptr == User)
+				return;
 			switch (packet.body[0]) {
 			case (char)ECharacterAction::EA_Attack:
 				User->Attack();
@@ -282,6 +287,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	case PACKET_TYPE::LOGOUT:
 	{
 		APlayerCharacter* User = PlayerList[packet.userID];
+		if (nullptr == User)
+			return;
 		User->Destroy();
 		PlayerList.Remove(packet.userID);
 
