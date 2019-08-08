@@ -5,8 +5,6 @@
 #include "PaperFlipbookComponent.h"
 #include "PaperFlipbook.h"
 #include "UObject/ConstructorHelpers.h"
-
-// 임시
 #include "BigNantoGameInstance.h"
 #include "CenterViewPawn.h"
 
@@ -64,10 +62,8 @@ void ARingOutExplosion::BeginPlay()
 		break;
 	}
 
-	// 임시 테스트용
-	FVector Target = CenterViewPawn->GetActorLocation();
-	FVector Start = GetActorLocation();
-	FVector dir = Target - Start;
+
+	SetExplosionDirection();
 }
 
 // Called every frame
@@ -76,5 +72,24 @@ void ARingOutExplosion::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (false == PaperFlipComponent->IsPlaying())
 		Destroy();
+}
+
+void ARingOutExplosion::SetExplosionDirection()
+{
+	UBigNantoGameInstance* GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());
+	CenterViewPawn = GameInstance->CenterViewPawn;
+
+	FVector Target = CenterViewPawn->GetActorLocation();
+	FVector Start = GetActorLocation();
+	FVector dir = (Target - Start).GetSafeNormal();
+
+	float Dot = FVector::DotProduct(FVector::UpVector, dir);
+	float AcosAngle = FMath::Acos(Dot);
+	float Angle = FMath::RadiansToDegrees(AcosAngle);
+
+	FVector Cross = FVector::CrossProduct(FVector::ForwardVector, dir);
+	if (Cross.Z < 0) Angle = -Angle;
+
+	SetActorRotation(FRotator(0.f, 0.f, Angle));
 }
 

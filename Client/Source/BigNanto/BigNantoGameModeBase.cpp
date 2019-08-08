@@ -41,7 +41,7 @@ void ABigNantoGameModeBase::BeginPlay()
 	GameInstance->GameModeBase = this;
 	
 	// 시작시 로그인 위젯으로 전환
-	//ChangeWidget(LoginWidgetClass);
+	ChangeWidget(LoginWidgetClass);
 }
 
 void ABigNantoGameModeBase::ChangeWidget(TSubclassOf<UUserWidget> NewWidegtClass)

@@ -36,4 +36,6 @@ public:
 	class UPaperFlipbook* RingOut_P2;
 	class UPaperFlipbook* RingOut_P3;
 	class UPaperFlipbook* RingOut_P4;
+
+	void SetExplosionDirection();
 };

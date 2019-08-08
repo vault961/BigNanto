@@ -3,6 +3,7 @@
 
 #include "PlayerCharacter.h"
 #include "Animation/AnimInstance.h"
+#include "RingOutExplosion.h"
 #include "BigNantoGameInstance.h"
 #include "BigNantoGameModeBase.h"
 #include "BigNantoPlayerController.h"
@@ -463,7 +464,7 @@ void APlayerCharacter::Die()
 		UWorld* World = GetWorld();
 		if (World)
 		{
-			//World->SpawnActor<AActor>(RingOutParticle->GetClass(), GetActorTransform());
+			World->SpawnActor<ARingOutExplosion>(ARingOutExplosion::StaticClass(), GetActorTransform());
 		}
 
 		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
