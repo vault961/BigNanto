@@ -216,7 +216,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		}
 		if(!PlayerList.Contains(packet.userID))
 			PlayerList.Add(packet.userID, Character);
-		//PlayerList[packet.userID] = Character;
 		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName));
 		
 		break;
