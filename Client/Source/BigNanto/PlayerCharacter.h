@@ -31,7 +31,10 @@ enum class ECharacterAction : uint8
 	EA_Hit,
 	EA_Jump,
 	EA_SpecialAbility,
+	EA_StopSpecialAbility,
 	EA_Die,
+	EA_Move,
+	EA_StopMove,
 };
 
 // 캐릭터 직업
@@ -98,7 +101,6 @@ public:
 	uint8 LifeCount;
 
 	// 애님 인스턴스 레퍼런스
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation)
 	class UPlayerCharacterAnim* AnimInstance;
 	// 게임 인스턴스 레퍼런스
 	class UBigNantoGameInstance* GameInstance;
@@ -129,8 +131,7 @@ public:
 	bool IsMine;
 	uint8 NewDir;
 	uint8 PlayerDir;
-
-	uint8 MyID;
+	uint8 MyID;			// 플레이어 아이디
 
 	FVector NewLocation;
 	float NewYaw;
@@ -138,6 +139,7 @@ public:
 	FVector PlayerLocation;
 	float PlayerYaw;
 
+	// 보정할 위치, 방향 수신
 	FVector UpdatedLocation;
 	FRotator UpdatedRotation;
 
@@ -179,6 +181,10 @@ public:
 	UFUNCTION()
 	virtual void StopAttack();
 
+	// 특수능력 콜 함수
+	virtual void CallSpecialAbility();
+	virtual void CallStopSpecialAbility();
+
 	// 특수능력
 	UFUNCTION()
 	virtual void SpecialAbility();
@@ -189,5 +195,4 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void Die();
 
-	virtual void BeginDestroy() override;
 };

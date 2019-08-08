@@ -154,6 +154,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	int sumlen = 0;
 
 	while (receivedSize >= FRONTLEN && receivedSize >= len) {
+
 		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receivedBuffer + USERLEN + LENLEN + sumlen), len, myuser.ClientSocket.Socket, receivedBuffer + FRONTLEN + sumlen , BROADCAST_MODE::ALL);
 		
 		receivedSize -= len;
@@ -209,6 +210,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		g_OrderQueue.Push(temp);
 		SetEvent(OrderQueueEvent);
 
+
 		
 		len = (int)*(wchar_t*)(receivedBuffer + sumlen);
 
@@ -217,6 +219,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 
 	for (int k = 0; k < receivedSize; k++)
 		receivedBuffer[k + sumlen] = receivedBuffer[k];
+
 
 }
 void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {

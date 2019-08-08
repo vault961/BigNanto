@@ -60,7 +60,7 @@ APlayerCharacter::APlayerCharacter()
 	GetCharacterMovement()->GravityScale = 3.f;		// 중력값
 	GetCharacterMovement()->AirControl = 0.8f;		// 공중에서 컨트롤 할 수 있는 힘
 	GetCharacterMovement()->JumpZVelocity = 1300.f; // 점프력
-	GetCharacterMovement()->GroundFriction = 5.f;	// 마찰
+	GetCharacterMovement()->GroundFriction = 10.f;	// 마찰
 	GetCharacterMovement()->MaxWalkSpeed = 1000.f;	// 최대속도
 	GetCharacterMovement()->MaxFlySpeed = 1000.f;	// 최대 공중 속도
 
@@ -143,7 +143,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 	PlayerLocation = GetActorLocation();
 	
 	// 플레이어 위치 보정
-	// 내 캐릭터가 아니면
+	// 내 캐릭터가 아니면 위치 수신
 	if (!IsMine)
 	{
 		UpdatedLocation = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
@@ -197,8 +197,8 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &APlayerCharacter::Attack);
 	PlayerInputComponent->BindAction("Attack", IE_Released, this, &APlayerCharacter::StopAttack);
 	// 막기
-	PlayerInputComponent->BindAction("SpecialAbility", IE_Pressed, this, &APlayerCharacter::SpecialAbility);
-	PlayerInputComponent->BindAction("SpecialAbility", IE_Released, this, &APlayerCharacter::StopSpecialAbility);
+	PlayerInputComponent->BindAction("SpecialAbility", IE_Pressed, this, &APlayerCharacter::CallSpecialAbility);
+	PlayerInputComponent->BindAction("SpecialAbility", IE_Released, this, &APlayerCharacter::CallStopSpecialAbility);
 }
 
 bool APlayerCharacter::GetWeaponActive() const
@@ -211,7 +211,6 @@ void APlayerCharacter::SetWeaponActive(bool bIsActive)
 	if (Weapon)
 		Weapon->bIsActive = bIsActive;
 }
-
 
 ECharacterState APlayerCharacter::GetCurrentState() const
 {
@@ -420,6 +419,26 @@ void APlayerCharacter::StopAttack()
 	
 }
 
+void APlayerCharacter::CallSpecialAbility()
+{
+	if (IsMine)
+	{
+		anibody = (char)ECharacterAction::EA_SpecialAbility;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
+		SpecialAbility();
+	}
+}
+
+void APlayerCharacter::CallStopSpecialAbility()
+{
+	if (IsMine)
+	{
+		anibody = (char)ECharacterAction::EA_StopSpecialAbility;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
+		StopSpecialAbility();
+	}
+}
+
 void APlayerCharacter::SpecialAbility()
 {
 	UE_LOG(LogTemp, Warning, TEXT("This character has no ability!!!"));
@@ -450,6 +469,7 @@ void APlayerCharacter::Die()
 		Destroy();
 	}
 
+<<<<<<< HEAD
 }
 
 void APlayerCharacter::BeginDestroy()
@@ -458,3 +478,6 @@ void APlayerCharacter::BeginDestroy()
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("플레이어 : ") + PlayerName + TEXT("으앙 나 파괴됨"));
 }
 
+=======
+}
+>>>>>>> 7b19dae35dee39ebef0ae592f0796a88c387e9ce

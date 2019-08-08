@@ -32,6 +32,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bIsChanneling;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	bool bIsMoving;
+
 	UPROPERTY()
 	class UAnimMontage* HitMontage;
 

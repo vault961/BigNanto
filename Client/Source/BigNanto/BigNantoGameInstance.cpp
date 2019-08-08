@@ -212,34 +212,51 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 
 		break;
 	}
+	case PACKET_TYPE::UPDATEDMG:
+	{
+		APlayerCharacter* User = PlayerList[packet.userID];
+		User->DamagePercent = *(float*)packet.body;
+
+		break;
+	}
 	case PACKET_TYPE::UPDATESTATE:
 	{
 		if (packet.userID != MyID) {
 			APlayerCharacter* User = PlayerList[packet.userID];
 
-			if (nullptr != User)
-			{
-				switch (packet.body[0]) {
-				case (char)ECharacterAction::EA_Attack:
-					User->Attack();
-					break;
-				case (char)ECharacterAction::EA_Defend:
-					break;
-				case (char)ECharacterAction::EA_DefendHit:
-					break;
-				case (char)ECharacterAction::EA_Hit:
-					break;
-				case (char)ECharacterAction::EA_Jump:
-					User->DoJump();
-					break;
-				case (char)ECharacterAction::EA_StopAttack:
-					User->StopAttack();
-					break;
-				case (char)ECharacterAction::EA_Die:
-					User->Destroy();
-					PlayerList.Remove(packet.userID);
-					break;
-				}
+			switch (packet.body[0]) {
+			case (char)ECharacterAction::EA_Attack:
+				User->Attack();
+				break;
+			case (char)ECharacterAction::EA_Defend:
+				break;
+			case (char)ECharacterAction::EA_DefendHit:
+				break;
+			case (char)ECharacterAction::EA_Hit:
+				break;
+			case (char)ECharacterAction::EA_Jump:
+				User->DoJump();
+				break;
+			case (char)ECharacterAction::EA_StopAttack:
+				User->StopAttack();
+				break;
+			case (char)ECharacterAction::EA_Die:
+				User->Destroy();
+				PlayerList.Remove(packet.userID);
+				break;
+			case (char)ECharacterAction::EA_Move:
+				User->AnimInstance->bIsMoving = true;
+				break;
+			case (char)ECharacterAction::EA_StopMove:
+				User->AnimInstance->bIsMoving = false;
+				break;
+			case (char)ECharacterAction::EA_SpecialAbility:
+				User->SpecialAbility();
+				break;
+			case (char)ECharacterAction::EA_StopSpecialAbility:
+				User->StopSpecialAbility();
+				break;
+
 			}
 		}
 		break;
