@@ -178,17 +178,31 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	receivedSize += retValue;
 
 	
-	int len = (int)*(wchar_t*)receivedBuffer;
-	logger.write("RecvProcess() before make packet, id:%d len:%d recvSize:%d retvalue:%d", myuser.ClientSocket.Socket, len, receivedSize, retValue);
-
+	//int len = (int)*(wchar_t*)receivedBuffer;
+	//logger.write("RecvProcess() before make packet, id:%d len:%d recvSize:%d retvalue:%d", myuser.ClientSocket.Socket, len, receivedSize, retValue);
+	int len = 0;
 	int sumlen = 0;
 
-	while (receivedSize >= FRONTLEN && receivedSize >= len) {
+	while (receivedSize >= FRONTLEN && receivedSize >= (len = (int)*(wchar_t*)(receivedBuffer + sumlen))) {
+		shared_ptr<Packet> temppacket;
+		if (len > 50) {
+			char empty[1];
+			logger.write("not correct len, id:%d len:%d recvSize:%d sumlen:%d", myuser.ClientSocket.Socket, len, receivedSize, sumlen);
+			temppacket = make_shared<Packet>(PACKET_TYPE::LOGOUT, FRONTLEN + 1, myuser.ClientSocket.Socket, empty, BROADCAST_MODE::EXCEPTME);
+			SentInfo temp(temppacket);
+			// broadcast
+			g_OrderQueue.Push(temp);
+			SetEvent(OrderQueueEvent);
+
+			//close socket
+			printf("close!");
+			closesocket(myuser.ClientSocket.Socket);
+			CompressArrays(myuser.ClientSocket.Socket);
+			return;
+		}
 		PACKET_TYPE Type = (PACKET_TYPE)*(receivedBuffer + USERLEN + LENLEN + sumlen);
 		char * Body = receivedBuffer + FRONTLEN + sumlen;
-		shared_ptr<Packet> temppacket;
-		// = make_shared<Packet>((PACKET_TYPE)*(receivedBuffer + USERLEN + LENLEN + sumlen), len, myuser.ClientSocket.Socket, receivedBuffer + FRONTLEN + sumlen, BROADCAST_MODE::ALL);
-
+		
 		receivedSize -= len;
 		sumlen += len;
 
@@ -225,7 +239,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		g_OrderQueue.Push(temp);
 		SetEvent(OrderQueueEvent);
 
-		len = (int)*(wchar_t*)(receivedBuffer + sumlen);
+		//len = (int)*(wchar_t*)(receivedBuffer + sumlen);
 		logger.write("RecvProcess() after(2) make packet, id:%d len:%d recvSize:%d sumlen:%d", myuser.ClientSocket.Socket, len, receivedSize, sumlen);
 	}
 
