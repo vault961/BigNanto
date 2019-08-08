@@ -10,13 +10,13 @@ HANDLE CompletionPort;
 std::map<SOCKET, User*> UserMap;
 Log logger;
 
-
 using namespace std;
 
-void AddSocket(SOCKET Socket) {
+void AddSocket(SOCKET Socket, SOCKADDR_IN Address) {
 	UserMapLock.WriteLock();
 	printf("socket : %d connected\n", Socket);
 	UserMap.insert(std::make_pair(Socket, new User(Socket)));
+	UserMap.find(Socket)->second->IP = Address.sin_addr;
 	UserMapLock.WriteUnLock();
 }
 
@@ -56,21 +56,23 @@ void User::GetOthersInfo() {
 	UserMapLock.ReadLock();
 	for (auto it = UserMap.begin();it != UserMap.end(); it++) {
 		if (it->first != ClientSocket.Socket) {
-			fromuser = it->second;
-			char source[50];
-			int sum = 0;
-			int namelen = strlen(fromuser->Name);
+			if (it->second->IsEnter == 1) {
+				fromuser = it->second;
+				char source[50];
+				int sum = 0;
+				int namelen = strlen(fromuser->Name);
 
-			DataAddCopy(source, &fromuser->CharacterClass, sizeof(char), sum);
-			DataAddCopy(source, &fromuser->PosY, sizeof(float), sum);
-			DataAddCopy(source, &fromuser->PosZ, sizeof(float), sum);
-			DataAddCopy(source, &fromuser->Damage, sizeof(float), sum);
-			DataAddCopy(source, fromuser->Name, namelen, sum);
+				DataAddCopy(source, &fromuser->CharacterClass, sizeof(char), sum);
+				DataAddCopy(source, &fromuser->PosY, sizeof(float), sum);
+				DataAddCopy(source, &fromuser->PosZ, sizeof(float), sum);
+				DataAddCopy(source, &fromuser->Damage, sizeof(float), sum);
+				DataAddCopy(source, fromuser->Name, namelen, sum);
 
 
-			auto ko = make_shared<Packet>(PACKET_TYPE::PLAYERSPAWN, sum+FRONTLEN, it->first, source, BROADCAST_MODE::ONLYME);
-			SentInfo temp(ko);
-			PushAndSend(temp);
+				shared_ptr<Packet> ko = make_shared<Packet>(PACKET_TYPE::PLAYERSPAWN, sum + FRONTLEN, it->first, source, BROADCAST_MODE::ONLYME);
+				SentInfo temp(ko);
+				PushAndSend(temp);
+			}
 		}
 	}
 	UserMapLock.ReadUnLock();
@@ -91,6 +93,8 @@ void DataAddGet(T* source, char* get, int size, int& sum) {
 void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, int& len) {
 	int sum = 0;
 	char * source = temppacket.get()->Body + FRONTLEN;
+	myuser.IsEnter = 1;
+
 	DataAddGet(&myuser.CharacterClass, source, sizeof(char), sum);
 	DataAddGet(&myuser.PosY, source, sizeof(float), sum);
 	DataAddGet(&myuser.PosZ, source, sizeof(float), sum);
@@ -103,45 +107,66 @@ void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, int& len) {
 
 }
 
-void EnterProcess(User& myuser, shared_ptr<Packet>& temppacket) {
-//	memcpy(temppacket.get()->Body + LENLEN, &myuser.ClientSocket.Socket, USERLEN);
-	SentInfo temp(temppacket);
-	myuser.PushAndSend(temp);
-}
-void NameCheckProcess(User& myuser, char * Name, int NameLen) {
-	char ReqName[30]{ 0 };
-	bool isthere = false;
-	memcpy(ReqName, Name, NameLen);
-	
-	UserMapLock.ReadLock();
-	for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
-		if (strcmp(ReqName, it->second->Name) == 0) {
-			isthere = true;
-			break;
-		}
-	}
-	UserMapLock.ReadUnLock();
 
-
-	
+shared_ptr<Packet> NameCheckProcess(User& myuser, char * Name, int NameLen) {
+	char ReqName[100]{ 0 };
 	char buf[1];
-	if (isthere) {
-		printf("nonoononnoonzz");
-		buf[0] = 1;
+	bool isthere = false;
+	bool flag = true;
+
+	
+	if (NameLen > 20) {
+		printf("too long packet name");
+		flag = false;
+		buf[0] = (char)ERRORCODE::TOOLONG;
 	}
 	else {
-		printf("welcome!");
-		buf[0] = 0;
+		memcpy(ReqName, Name, NameLen);
+		for (int i = 0; i < strlen(ReqName); ++i)
+		{
+			if ('a' > ReqName[i] || ReqName[i] > 'z') {
+				buf[0] = (char)ERRORCODE::NOTENGLISH;
+				flag = false;
+				break;
+			}
+		}
+	}
+	
+	if (flag == true) {
+
+		UserMapLock.ReadLock();
+		for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
+			if (it->second->IsEnter == 1) {
+				if (strcmp(ReqName, it->second->Name) == 0) {
+					isthere = true;
+					break;
+				}
+			}
+		}
+		UserMapLock.ReadUnLock();
+
+
+		if (isthere) {
+			printf("중복된이름\n");
+			buf[0] = (char)ERRORCODE::ALREADYNAME;
+		}
+		else {
+			printf("welcome!\n");
+			buf[0] = (char)ERRORCODE::NOTERROR;
+		}
 	}
 
-	auto temppacket = make_shared<Packet>(PACKET_TYPE::NAMECHECK, FRONTLEN + 1, myuser.ClientSocket.Socket, buf, BROADCAST_MODE::ONLYME);
-	
+
+	return make_shared<Packet>(PACKET_TYPE::NAMECHECK, FRONTLEN + 1, myuser.ClientSocket.Socket, buf, BROADCAST_MODE::ONLYME);
+	//auto temppacket = make_shared<Packet>(PACKET_TYPE::NAMECHECK, FRONTLEN + 1, myuser.ClientSocket.Socket, buf, BROADCAST_MODE::ONLYME);
+	//SentInfo temp(temppacket);
+	//myuser.PushAndSend(temp);
 }
 
 void RecvProcess(char * source, int retValue, User& myuser) {
 	char * receivedBuffer = myuser.ClientSocket.ReceiveBuffer;
 	int& receivedSize = myuser.ClientSocket.ReceivedBufferSize;
-	
+
 	memcpy(receivedBuffer + receivedSize, source, retValue);
 	receivedSize += retValue;
 
@@ -149,70 +174,51 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	int len = (int)*(wchar_t*)receivedBuffer;
 	logger.write("RecvProcess() before make packet, id:%d len:%d recvSize:%d retvalue:%d", myuser.ClientSocket.Socket, len, receivedSize, retValue);
 
-	//printf("%d %d recieve\n", len);
 	int sumlen = 0;
 
 	while (receivedSize >= FRONTLEN && receivedSize >= len) {
+		PACKET_TYPE Type = (PACKET_TYPE)*(receivedBuffer + USERLEN + LENLEN + sumlen);
+		char * Body = receivedBuffer + FRONTLEN + sumlen;
+		shared_ptr<Packet> temppacket;
+		// = make_shared<Packet>((PACKET_TYPE)*(receivedBuffer + USERLEN + LENLEN + sumlen), len, myuser.ClientSocket.Socket, receivedBuffer + FRONTLEN + sumlen, BROADCAST_MODE::ALL);
 
-		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receivedBuffer + USERLEN + LENLEN + sumlen), len, myuser.ClientSocket.Socket, receivedBuffer + FRONTLEN + sumlen , BROADCAST_MODE::ALL);
-		
 		receivedSize -= len;
 		sumlen += len;
-		
 
-
-		//Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize); // array resize
 		logger.write("RecvProcess() after make packet, id:%d len:%d recvSize:%d sumlen:%d", myuser.ClientSocket.Socket, len, receivedSize, sumlen);
-
-
-		switch (temppacket.get()->Type) {
+		switch (Type) {
 		case PACKET_TYPE::PLAYERSPAWN:
+			temppacket = make_shared<Packet>(Type, len, myuser.ClientSocket.Socket, Body, BROADCAST_MODE::ALL);
 			SpawnProcess(myuser, temppacket, len);
 			break;
-		case PACKET_TYPE::ENTER:
-			// do not broadcast
-			printf("user enter!\n");
-			temppacket.get()->BMode = BROADCAST_MODE::ONLYME;
-
-			EnterProcess(myuser, temppacket);
-			break;
 		case PACKET_TYPE::UPDATELOCATION:
-			temppacket.get()->BMode = BROADCAST_MODE::EXCEPTME;
-			myuser.PosY = *(float*)(temppacket.get()->Body + FRONTLEN);
-			myuser.PosZ = *(float*)(temppacket.get()->Body + FRONTLEN + 4);
-			myuser.Dir = *(temppacket.get()->Body + FRONTLEN + 8);
+			temppacket = make_shared<Packet>(Type, len, myuser.ClientSocket.Socket, Body, BROADCAST_MODE::EXCEPTME);
+			myuser.PosY = *(float*)(Body);
+			myuser.PosZ = *(float*)(Body + 4);
+			myuser.Dir = *(Body + 8);
 			logger.write("UpdataeLocation id:%d PosY:%f PosZ:%f Dir:%d", myuser.ClientSocket.Socket, myuser.PosY, myuser.PosZ, myuser.Dir);
-
-
-			//printf("%f %f\n", *(float*)(temppacket.get()->Body + FRONTLEN), *(float*)(temppacket.get()->Body+FRONTLEN +4  ));
 			break;
 		case PACKET_TYPE::UPDATEDMG:
-			temppacket.get()->BMode = BROADCAST_MODE::EXCEPTME;
-			myuser.Damage = *(float*)(temppacket.get()->Body + FRONTLEN);
+			temppacket = make_shared<Packet>(Type, len, myuser.ClientSocket.Socket, Body, BROADCAST_MODE::EXCEPTME);
+			myuser.Damage = *(float*)Body;
 			break;
 		case PACKET_TYPE::NAMECHECK:
-			temppacket.get()->BMode = BROADCAST_MODE::ONLYME;
-			NameCheckProcess(myuser, temppacket.get()->Body+FRONTLEN, temppacket.get()->Len-FRONTLEN);
+			temppacket = NameCheckProcess(myuser, Body, len - FRONTLEN);
 			break;
 		case PACKET_TYPE::UPDATESTATE:
-			temppacket.get()->BMode = BROADCAST_MODE::EXCEPTME;
-			if (temppacket.get()->Body[FRONTLEN] == (char)ECharacterAction::EA_Die) {
+			temppacket = make_shared<Packet>(Type, len, myuser.ClientSocket.Socket, Body, BROADCAST_MODE::EXCEPTME);
+			if (*Body == (char)ECharacterAction::EA_Die) {
+				myuser.IsEnter = 0;
 				memset(myuser.Name, 0, sizeof(myuser.Name));
 			}
 			break;
-	
 		}
-		
 
 		SentInfo temp(temppacket);
-		// broadcast
 		g_OrderQueue.Push(temp);
 		SetEvent(OrderQueueEvent);
 
-
-		
 		len = (int)*(wchar_t*)(receivedBuffer + sumlen);
-
 		logger.write("RecvProcess() after(2) make packet, id:%d len:%d recvSize:%d sumlen:%d", myuser.ClientSocket.Socket, len, receivedSize, sumlen);
 	}
 
@@ -264,7 +270,7 @@ void Sender::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 	WSABUF wBuf;
 	sendinfo.Sended += bytes;
 
-	//logger.write("Send Work() %d %d", Socket, bytes);
+	logger.write("Send Work() userid:%d bytes:%d type:%d", Socket, bytes, sendinfo.Sp.get()->Type);
 
 	if (sendinfo.Sended >= sendinfo.MaxLen) {
 		myuser.ClientSocket.WaitingQueue.Pop();

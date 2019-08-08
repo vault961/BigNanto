@@ -24,6 +24,13 @@ enum class PACKET_TYPE {
 	NAMECHECK,
 	LOGOUT,
 };
+enum class ERRORCODE
+{
+	NOTERROR,
+	TOOLONG,
+	ALREADYNAME,
+	NOTENGLISH,
+};
 
 class Packet {
 public:

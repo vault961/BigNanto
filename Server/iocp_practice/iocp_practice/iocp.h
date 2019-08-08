@@ -52,6 +52,14 @@ enum class ECharacterAction
 	EA_StopMove,
 
 };
+enum class ERRORCODE
+{
+	NOTERROR,
+	TOOLONG,
+	ALREADYNAME,
+	NOTENGLISH,
+};
+
 enum class BROADCAST_MODE {
 	ALL,
 	EXCEPTME,
@@ -204,7 +212,7 @@ public:
 	Log() {
 		SYSTEMTIME cur_time;
 		GetLocalTime(&cur_time);
-		char name[30];
+		char name[100];
 		sprintf(name, "[%02d%02d%02d]log.txt", cur_time.wHour, cur_time.wMinute, cur_time.wSecond);
 		fp = fopen(name, "a");
 	}
@@ -229,6 +237,7 @@ public:
 class User {
 public:
 	User(SOCKET socket) {
+		IsEnter = 0;
 		ClientSocket.Socket = socket;
 		CharacterClass = 0;
 		PosY = 0;
@@ -238,7 +247,9 @@ public:
 		ClientSocket.ReceivedBufferSize = 0;
 	}
 	ClientSocket ClientSocket;
-	char Name[30];
+	IN_ADDR IP;
+	char IsEnter;
+	char Name[100]{ 0 };
 	char CharacterClass;
 	float Damage;
 	float PosY;
@@ -261,12 +272,11 @@ extern Log logger;
 
 User& GetUser(SOCKET idx);
 void CompressArrays(SOCKET i);
-void AddSocket(SOCKET Socket);
+void AddSocket(SOCKET Socket, SOCKADDR_IN Address);
 void Compress(char *source, int len);
 void RecvProcess(char * source, int retValue, User& myuser);
 void OrderQueueThread();
 void SpawnProcess(User& myuser, std::shared_ptr<Packet>& temppacket, int& len);
-void EnterProcess(User& myuser, std::shared_ptr<Packet>& temppacket);
 
 template <typename T>
 void DataAddCopy(char * source, T* get, int size, int& sum);
