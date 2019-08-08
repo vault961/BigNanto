@@ -17,14 +17,6 @@ class BIGNANTO_API ABigNantoGameModeBase : public AGameModeBase
 protected:
 	virtual void BeginPlay() override;
 
-	// 로그인 위젯
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSubclassOf<UUserWidget> LoginWidgetClass;
-	
-	// 캐릭터 생성 위젯
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSubclassOf<UUserWidget> CharacterMakeWidgetClass;
-
 	// 현재 위젯
 	UPROPERTY()
 	UUserWidget* CurrentWidget;
@@ -35,6 +27,18 @@ protected:
 
 public:
 	ABigNantoGameModeBase();
+
+	// 로그인 위젯
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<UUserWidget> LoginWidgetClass;
+	
+	// 캐릭터 생성 위젯
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<UUserWidget> CharacterMakeWidgetClass;
+
+	// 사망시 위젯
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<UUserWidget> DieWidgetClass;
 
 	// 위젯 전환 함수
 	UFUNCTION(BlueprintCallable)

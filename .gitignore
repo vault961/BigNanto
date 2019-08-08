@@ -58,6 +58,10 @@ Plugins/*/Binaries/
 # Builds
 Build/
 
+# Server Log
+Server/iocp_practice/iocp_practice/*log.txt
+Server/iocp_practice/iocp_practice/log.txt
+
 # Whitelist PakBlacklist-<BuildConfiguration>.txt files
 !Build/*/
 Build/*/**
