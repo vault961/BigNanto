@@ -60,11 +60,7 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 Bo
 		UE_LOG(LogTemp, Error, TEXT("%d %d"), size, sent);
 
 		bool successful = ConnectionSocket->Send(BUF, size, sent);
-<<<<<<< HEAD
-	//	UE_LOG(LogTemp, Error, TEXT("%d %d"),Type,size);
-=======
-		
->>>>>>> 22cf73bb9f2e16deed95433fb583c48c6ca5a50a
+
 
 		if (!successful) {
 			UE_LOG(LogTemp, Error, TEXT("Message can't send!!!!!!!!"));
