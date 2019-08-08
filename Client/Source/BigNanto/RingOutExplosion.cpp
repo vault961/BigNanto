@@ -67,7 +67,7 @@ void ARingOutExplosion::BeginPlay()
 	// 임시 테스트용
 	FVector Target = Cast<UBigNantoGameInstance>(GetGameInstance())->CenterViewPawn->GetActorLocation();
 	FVector Start = GetActorLocation();
-	FRotator dir = Target - Start;
+	FVector dir = Target - Start;
 }
 
 // Called every frame
