@@ -8,9 +8,11 @@ public class BigNanto : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "Networking", "Sockets" }); // UMG, Networking, Socket 추가
+		PublicDependencyModuleNames.AddRange(new string[] {
+            "Core", "CoreUObject", "Engine", "InputCore", "UMG", "Networking", "Sockets", "Paper2D" }); // UMG, Networking, Socket 추가
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
+
+        PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore", "Paper2D" });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

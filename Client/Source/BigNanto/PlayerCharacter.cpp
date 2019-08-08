@@ -82,6 +82,11 @@ APlayerCharacter::APlayerCharacter()
 	if (HitParticleAsset.Succeeded())
 		HitParticle = HitParticleAsset.Object;
 
+	// 사망 파티클
+	//static ConstructorHelpers::FClassFinder<AActor> RingOutParitcleAsset(TEXT("/Game/Blueprints/RingOutEffect"));
+	//if (RingOutParitcleAsset.Class)
+	//	RingOutParticle = RingOutParitcleAsset.Class;
+
 	// 캐릭터 UI
 	PlayerUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerUI"));
 	static ConstructorHelpers::FClassFinder<UUserWidget> PlayerUIAsset(TEXT("/Game/UMG/PlayerUI"));
@@ -400,13 +405,8 @@ void APlayerCharacter::Attack()
 
 void APlayerCharacter::StopAttack()
 {
-	if (AnimInstance)
-	{
-		AnimInstance->bIsAttacking = false;
-	}
-	
-	if (CurrentState != ECharacterState::EAttack)
-		return;
+	//if (CurrentState != ECharacterState::EAttack)
+	//	return;
 
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" StopAttack()"));
 	// 나 일경우 stopattack 신호 보냄.
@@ -416,6 +416,10 @@ void APlayerCharacter::StopAttack()
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 	}
 	
+	if (AnimInstance)
+	{
+		AnimInstance->bIsAttacking = false;
+	}
 	
 }
 
@@ -456,6 +460,12 @@ void APlayerCharacter::Die()
 
 	if (IsMine)
 	{
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			//World->SpawnActor<AActor>(RingOutParticle->GetClass(), GetActorTransform());
+		}
+
 		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
 		if (CenterViewCamera)
 		{
@@ -468,6 +478,4 @@ void APlayerCharacter::Die()
 
 		Destroy();
 	}
-
-
 }

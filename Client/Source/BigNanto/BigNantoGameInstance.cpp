@@ -140,11 +140,11 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
 
 			// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
-			char buf[30];
+			char buf[11]{ 0 };
 
-			int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_ANSI(*MyName), MyName.Len());
-			UE_LOG(LogTemp, Warning, TEXT("%s"), MyName.GetCharArray().GetData());
-
+			int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_UTF8(*MyName), MyName.Len() + 1);
+			//UE_LOG(LogTemp, Warning, TEXT("%s"), MyName.GetCharArray().GetData());
+			
 			// 서버에게 내 캐릭터 요청
 			SendMessage(PACKET_TYPE::PLAYERSPAWN, buf, len);
 		}
@@ -162,7 +162,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		float PosY;
 		float PosZ;
 		float DamagePercent;
-		uint8 PlayerName[30]{ 0 };
+		uint8 PlayerName[11]{ 0 };
 
 		DataAddGet(&CharacterClass, source, sizeof(char), sum);
 		DataAddGet(&PosY, source, sizeof(float), sum);
@@ -288,7 +288,23 @@ void UBigNantoGameInstance::NameCheck(FString UserName, uint8 ClassType)
 	MyName = UserName + '\0';
 	MyClassType = ClassType;
 
-	SendMessage(PACKET_TYPE::NAMECHECK, TCHAR_TO_ANSI(*UserName), UserName.Len());
+	if (MyName.Len() > 10)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, TEXT("이름은 10자를 넘을 수 없습니다"));
+		return;
+	}
+	
+	//for (auto it : MyName.GetCharArray()) {
+	//	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, TEXT("") +it);
+	//	if(!('0' <= it && it <= 'z'))
+	//	{
+
+	//		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, it + TEXT("는 적절한 이름이 아닙니다"));
+	//		return;
+	//	}
+	//}
+
+	SendMessage(PACKET_TYPE::NAMECHECK, TCHAR_TO_UTF8(*UserName), UserName.Len());
 }
 
 bool UBigNantoGameInstance::EnterGame(FString ServerIP, int32 ServerPort)
