@@ -30,6 +30,7 @@ enum class ERRORCODE
 	TOOLONG,
 	ALREADYNAME,
 	NOTENGLISH,
+	TOOSHORT,
 };
 
 class Packet {
