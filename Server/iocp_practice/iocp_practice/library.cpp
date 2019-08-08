@@ -151,11 +151,11 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 	logger.write("RecvProcess() before make packet, id:%d len:%d recvSize:%d retvalue:%d", myuser.ClientSocket.Socket, len, receivedSize, retValue);
 
 	//printf("%d %d recieve\n", len);
-	int sumlen = 0;
+	//int sumlen = 0;
 
 	while (receivedSize >= FRONTLEN && receivedSize >= len) {
-		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receivedBuffer +USERLEN+LENLEN + sumlen), len, myuser.ClientSocket.Socket, receivedBuffer + FRONTLEN, BROADCAST_MODE::ALL);
-		
+		auto temppacket = make_shared<Packet>((PACKET_TYPE)*(receivedBuffer +USERLEN+LENLEN), len, myuser.ClientSocket.Socket, receivedBuffer + FRONTLEN, BROADCAST_MODE::ALL);
+		Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - len); // array resize
 		receivedSize -= len;
 		logger.write("RecvProcess() after make packet, id:%d len:%d recvSize:%d retvalue:%d", myuser.ClientSocket.Socket, len, receivedSize, retValue);
 
@@ -200,11 +200,12 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 		g_OrderQueue.Push(temp);
 		SetEvent(OrderQueueEvent);
 
-		sumlen += len;
-		len = (int)*(wchar_t*)(receivedBuffer+sumlen);
+		//sumlen += len;
+		
+		len = (int)*(wchar_t*)(receivedBuffer);
 	}
 
-	Compress(myuser.ClientSocket.ReceiveBuffer, receivedSize - sumlen); // array resize
+	
 
 }
 void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {

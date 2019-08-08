@@ -212,6 +212,13 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 
 		break;
 	}
+	case PACKET_TYPE::UPDATEDMG:
+	{
+		APlayerCharacter* User = PlayerList[packet.userID];
+		User->DamagePercent = *(float*)packet.body;
+
+		break;
+	}
 	case PACKET_TYPE::UPDATESTATE:
 	{
 		if (packet.userID != MyID) {
@@ -234,6 +241,19 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				break;
 			case (char)ECharacterAction::EA_Die:
 				User->Destroy();
+				PlayerList.Remove(packet.userID);
+				break;
+			case (char)ECharacterAction::EA_Move:
+				User->AnimInstance->bIsMoving = true;
+				break;
+			case (char)ECharacterAction::EA_StopMove:
+				User->AnimInstance->bIsMoving = false;
+				break;
+			case (char)ECharacterAction::EA_SpecialAbility:
+				User->SpecialAbility();
+				break;
+			case (char)ECharacterAction::EA_StopSpecialAbility:
+				User->StopSpecialAbility();
 				break;
 			}
 		}

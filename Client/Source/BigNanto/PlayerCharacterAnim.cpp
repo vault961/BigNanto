@@ -6,6 +6,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "PlayerCharacter.h"
 #include "Engine/Engine.h"
+#include "BigNantoGameInstance.h"
 
 UPlayerCharacterAnim::UPlayerCharacterAnim()
 {
@@ -38,6 +39,34 @@ void UPlayerCharacterAnim::NativeUpdateAnimation(float DeltaTime)
 	{
 		bIsFalling = PlayerCharacter->GetMovementComponent()->IsFalling();
 		MoveSpeed = PlayerCharacter->GetVelocity().Size();
+
+		// 내 캐릭터만 움직임 여부 반영
+		if (PlayerCharacter->IsMine == true)
+		{
+			if (MoveSpeed != 0)
+			{
+				if (bIsMoving == false)
+				{
+					char anibody = (char)ECharacterAction::EA_Move;
+					PlayerCharacter->GameInstance->SendMessage(
+						PACKET_TYPE::UPDATESTATE, &anibody, 1);
+
+				}
+				bIsMoving = true;
+			}
+			else
+			{
+				if (bIsMoving == true)
+				{
+					char anibody = (char)ECharacterAction::EA_StopMove;
+					PlayerCharacter->GameInstance->SendMessage(
+						PACKET_TYPE::UPDATESTATE, &anibody, 1);
+
+				}
+				bIsMoving = false;
+			}
+		}
+		
 	}
 }
 
