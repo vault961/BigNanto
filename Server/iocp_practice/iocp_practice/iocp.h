@@ -47,6 +47,7 @@ enum class ECharacterAction
 	EA_Hit,
 	EA_Jump,
 	EA_SpecialAbility,
+	EA_StopSpecialAbility,
 	EA_Die,
 	EA_Move,
 	EA_StopMove,

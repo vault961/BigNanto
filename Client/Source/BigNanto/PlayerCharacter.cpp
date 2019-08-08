@@ -456,6 +456,10 @@ void APlayerCharacter::Die()
 
 	if (IsMine)
 	{
+		anibody = (char)ECharacterAction::EA_Die;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
+
+
 		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
 		if (CenterViewCamera)
 		{
@@ -463,8 +467,7 @@ void APlayerCharacter::Die()
 		}
 		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
 
-		anibody=(char)ECharacterAction::EA_Die;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
+		
 
 		Destroy();
 	}

@@ -57,7 +57,7 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 Bo
 
 	do {
 		//if (Type == PACKET_TYPE::UPDATESTATE)
-		//UE_LOG(LogTemp, Error, TEXT("%d %d"), size, sent);
+		//	UE_LOG(LogTemp, Error, TEXT("%d %d"), size, *(BUF+FRONTLEN));
 
 		bool successful = ConnectionSocket->Send(BUF, size, sent);
 

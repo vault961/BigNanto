@@ -121,7 +121,7 @@ shared_ptr<Packet> NameCheckProcess(User& myuser, char * Name, int NameLen) {
 		buf[0] = (char)ERRORCODE::TOOLONG;
 	}
 	else {
-		if (NameLen <= 1) {
+		if (NameLen < 1) {
 			printf("too short name");
 			flag = false;
 			buf[0] = (char)ERRORCODE::TOOSHORT;
@@ -130,7 +130,7 @@ shared_ptr<Packet> NameCheckProcess(User& myuser, char * Name, int NameLen) {
 			memcpy(ReqName, Name, NameLen);
 			for (int i = 0; i < strlen(ReqName); ++i)
 			{
-				if ('a' > ReqName[i] || ReqName[i] > 'z') {
+				if ('A' > ReqName[i] || ReqName[i] > 'z') {
 					buf[0] = (char)ERRORCODE::NOTENGLISH;
 					flag = false;
 					break;
@@ -216,7 +216,7 @@ void RecvProcess(char * source, int retValue, User& myuser) {
 			temppacket = make_shared<Packet>(Type, len, myuser.ClientSocket.Socket, Body, BROADCAST_MODE::EXCEPTME);
 			if (*Body == (char)ECharacterAction::EA_Die) {
 				myuser.IsEnter = 0;
-				memset(myuser.Name, 0, sizeof(myuser.Name));
+				memset(myuser.Name, 0, 100);
 			}
 			break;
 		}
