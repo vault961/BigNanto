@@ -16,7 +16,7 @@ extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
 extern std::map<SOCKET, User*> UserMap;
 extern Log logger;
-
+extern map<ULONG, int> IPMap;
 void OrderQueueThread() {
 	while (1) {
 		WaitForSingleObject(OrderQueueEvent, INFINITE);
@@ -26,21 +26,20 @@ void OrderQueueThread() {
 			g_OrderQueue.Pop();
 			
 			UserMapLock.ReadLock();
-			for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
-				switch (BMode) {
-				case BROADCAST_MODE::ALL:
+			switch (BMode) {
+			case BROADCAST_MODE::ALL:
+				for (auto it = UserMap.begin(); it != UserMap.end(); it++)
 					(it->second)->PushAndSend(temp);
-					break;
-				case BROADCAST_MODE::EXCEPTME:
+				break;
+			case BROADCAST_MODE::EXCEPTME:
+				for (auto it = UserMap.begin(); it != UserMap.end(); it++)
 					if ((it->second)->ClientSocket.Socket != temp.Sp.get()->UserID)
 						(it->second)->PushAndSend(temp);
-					break;
-				case BROADCAST_MODE::ONLYME:
-					if ((it->second)->ClientSocket.Socket == temp.Sp.get()->UserID)
-						(it->second)->PushAndSend(temp);
-					break;
-				}
-				//printf("%d : %d\n", it->first, it->second->ClientSocket.WaitingQueue.Size());
+				break;
+			case BROADCAST_MODE::ONLYME:
+				if(UserMap[temp.Sp.get()->UserID] != nullptr)
+					UserMap[temp.Sp.get()->UserID]->PushAndSend(temp);
+				break;
 			}
 			UserMapLock.ReadUnLock();
 		}
@@ -58,19 +57,8 @@ unsigned int __stdcall ServerWorkerThread(LPVOID CompletionPortID) {
 	while (1) {
 		ret = GetQueuedCompletionStatus(CompletionPort, &BytesTransferred, (LPDWORD)&PerHandleData, (LPOVERLAPPED*)&RecvData, INFINITE);
 		if (BytesTransferred == 0) {
-			char empty[1]{ 0 };
-			auto temppacket = make_shared<Packet>(PACKET_TYPE::LOGOUT, FRONTLEN+1, PerHandleData->Socket, empty, BROADCAST_MODE::EXCEPTME);
-			SentInfo temp(temppacket);
-			// broadcast
-			g_OrderQueue.Push(temp);
-			SetEvent(OrderQueueEvent);
-
-
+			GetOut(PerHandleData->Socket);
 			//close socket
-			printf("close!");
-			closesocket(PerHandleData->Socket);
-			CompressArrays(PerHandleData->Socket);
-
 			free(PerHandleData);
 			delete (Worker*)RecvData;
 			continue;
@@ -130,6 +118,7 @@ int main(void) {
 	SOCKADDR_IN saRemote;
 	int RemoteLen;
 	SOCKET Accept;
+	
 
 
 	while (1) {
@@ -143,24 +132,12 @@ int main(void) {
 			closesocket(Accept);
 			continue;
 		}
-		int flag = 0;
-		for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
-			if (it->second->IP.S_un.S_un_b.s_b1 == saRemote.sin_addr.S_un.S_un_b.s_b1) {
-				if (it->second->IP.S_un.S_un_b.s_b2 == saRemote.sin_addr.S_un.S_un_b.s_b2) {
-					if (it->second->IP.S_un.S_un_b.s_b3 == saRemote.sin_addr.S_un.S_un_b.s_b3) {
-						if (it->second->IP.S_un.S_un_b.s_b4 == saRemote.sin_addr.S_un.S_un_b.s_b4) {
-							flag = 1;
-							break;
-						}
-					}
-				}
-			}
-		}
-		
+		IPMap[saRemote.sin_addr.S_un.S_addr]++;
+
 		UserMapLock.ReadUnLock();
 
-		if (flag == 1) {
-			printf("悼老 ip立加\n");
+		if (IPMap[saRemote.sin_addr.S_un.S_addr] > 3) {
+			printf("悼老 ip 3疙 檬苞立加\n");
 			closesocket(Accept);
 			continue;
 		}
@@ -184,6 +161,7 @@ int main(void) {
 		wbuf.len = PerIoData->BufferLen;
 		WSARecv(PerHandleData->Socket, &wbuf, 1, NULL, &flags, PerIoData, NULL);
 	}
+
 	th1.join();
 	printf("server end");
 	CloseHandle(OrderQueueEvent);
@@ -193,4 +171,5 @@ int main(void) {
 	return 0;
 
 }
+
 
