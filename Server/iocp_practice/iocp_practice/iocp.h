@@ -22,6 +22,9 @@
 #define ORDER 3
 #define SEND_POSTED 4
 
+#define SOURCELEN 50
+#define NAMELEN 50
+
 #define TYPELEN 1
 #define USERLEN 4
 #define LENLEN 2
@@ -214,7 +217,7 @@ public:
 	Log() {
 		SYSTEMTIME cur_time;
 		GetLocalTime(&cur_time);
-		char name[100];
+		char name[NAMELEN];
 		sprintf(name, "[%02d%02d%02d]log.txt", cur_time.wHour, cur_time.wMinute, cur_time.wSecond);
 		fp = fopen(name, "a");
 	}
@@ -247,11 +250,17 @@ public:
 		Damage = 0;
 		Dir = 0;
 		ClientSocket.ReceivedBufferSize = 0;
+		Begin = clock();
+		DDOS = 0;
 	}
 	ClientSocket ClientSocket;
-	IN_ADDR IP;
+	clock_t Begin;
+	ULONG IP;
+
+	unsigned char DDOS;
+
 	char IsEnter;
-	char Name[100]{ 0 };
+	char Name[NAMELEN]{ 0 };
 	char CharacterClass;
 	float Damage;
 	float PosY;
@@ -271,6 +280,7 @@ extern SOCKET ListenSocket;
 extern HANDLE CompletionPort;
 extern std::map<SOCKET, User*> UserMap;
 extern Log logger;
+extern std::map<ULONG, int> IPMap;
 
 User& GetUser(SOCKET idx);
 void CompressArrays(SOCKET i);
@@ -279,6 +289,8 @@ void Compress(char *source, int len);
 int RecvProcess(char * source, int retValue, User& myuser);
 void OrderQueueThread();
 void SpawnProcess(User& myuser, std::shared_ptr<Packet>& temppacket, int& len);
+void GetOut(SOCKET Socket);
+
 
 template <typename T>
 void DataAddCopy(char * source, T* get, int size, int& sum);
