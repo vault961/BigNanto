@@ -281,7 +281,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::LOGOUT:
 	{
-		APlayerCharacter* User = Cast<APlayerCharacter>(PlayerList[packet.userID]);
+		APlayerCharacter* User = PlayerList[packet.userID];
 		User->Destroy();
 		PlayerList.Remove(packet.userID);
 
