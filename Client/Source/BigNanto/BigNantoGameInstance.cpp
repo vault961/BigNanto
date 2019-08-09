@@ -142,7 +142,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
 
 			// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
-			char buf[11]{ 0 };
+			char buf[100]{ 0 };
 
 			int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_UTF8(*MyName), MyName.Len() + 1);
 			//UE_LOG(LogTemp, Warning, TEXT("%s"), MyName.GetCharArray().GetData());
@@ -263,7 +263,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				User->StopAttack();
 				break;
 			case (char)ECharacterAction::EA_Die:
-				//User->Destroy();
+				User->PlayRingOutEffect();
+				User->Destroy();
 				PlayerList.Remove(packet.userID);
 				break;
 			case (char)ECharacterAction::EA_Move:
@@ -285,7 +286,9 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	case PACKET_TYPE::LOGOUT:
 	{
 		// 미췬 버그 
-		APlayerCharacter* User = PlayerList[packet.userID];
+		APlayerCharacter* User = nullptr;
+		if (PlayerList.Contains(packet.userID))
+			User = PlayerList[packet.userID];
 		
 		if (nullptr == User)
 			return;

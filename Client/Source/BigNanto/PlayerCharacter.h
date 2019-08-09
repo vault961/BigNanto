@@ -200,4 +200,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void Die();
 
+	// ¸µ¾Æ¿ô ÀÌÆåÆ® »ý¼º
+	virtual void PlayRingOutEffect();
 };

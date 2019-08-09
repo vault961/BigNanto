@@ -379,7 +379,8 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	// 현재행동 중단하고 EHit 상태로 바꿔주기
 	SetCurrentState(ECharacterState::EHit);
 	AnimInstance->PlayGetHit();
-	LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
+	float KnockBackValue = HitDamage * DamagePercent * 2.f;
+	LaunchCharacter((HitDirection * KnockBackValue) + (FVector::UpVector * .5f * KnockBackValue), true, true);
 
 	// 공격 받은 방향으로 넉백
 	
@@ -461,22 +462,11 @@ void APlayerCharacter::Die()
 {
 	// 사망 로그
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"));
-	UWorld* World = GetWorld();
-
-	if (nullptr != World)
-	{
-		// 사망 이펙트
-		World->SpawnActor<ARingOutExplosion>(ARingOutExplosion::StaticClass(), GetActorTransform());
-		
-		// 카메라 쉐이크
-		if (nullptr != CameraShake)
-		{
-			World->GetFirstPlayerController()->PlayerCameraManager->PlayCameraShake(CameraShake);
-		}
-	}
 
 	if (IsMine)
 	{
+		PlayRingOutEffect();
+
 		anibody = (char)ECharacterAction::EA_Die;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 
@@ -487,6 +477,23 @@ void APlayerCharacter::Die()
 		}
 
 		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
+		Destroy();
 	}
-	Destroy();
+}
+
+void APlayerCharacter::PlayRingOutEffect()
+{
+	UWorld* World = GetWorld();
+
+	if (nullptr != World)
+	{
+		// 사망 이펙트
+		World->SpawnActor<ARingOutExplosion>(ARingOutExplosion::StaticClass(), GetActorTransform());
+
+		// 카메라 쉐이크
+		if (nullptr != CameraShake)
+		{
+			World->GetFirstPlayerController()->PlayerCameraManager->PlayCameraShake(CameraShake);
+		}
+	}
 }
