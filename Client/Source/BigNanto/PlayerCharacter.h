@@ -136,7 +136,7 @@ public:
 	bool IsMine;
 	uint8 NewDir;
 	uint8 PlayerDir;
-	uint8 MyID;			// 플레이어 아이디
+	uint32 MyID;			// 플레이어 아이디
 
 	FVector NewLocation;
 	float NewYaw;

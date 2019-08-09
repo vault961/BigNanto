@@ -9,6 +9,8 @@ void ABigNantoPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	bAutoManageActiveCameraTarget = false;
+
 	OnGameUI();
 
 	UBigNantoGameInstance* GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());

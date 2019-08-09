@@ -18,6 +18,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 public:
 	
@@ -28,4 +29,10 @@ public:
 	// 카메라 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class UCameraComponent* CameraComponent;
+
+	// 게임 인스턴스 레퍼런스
+	class UBigNantoGameInstance* GameInstance;
+
+	// 실시간 카메라 이동
+	void UpdateCameraPosition();
 };
