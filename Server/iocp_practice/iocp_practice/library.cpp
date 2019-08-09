@@ -270,7 +270,7 @@ void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 	}
 
 	myuser.Begin = end;
-	//logger.write("Recver Work() %d %d", Socket, bytes);
+	logger.write("Recver Work() %d %d", Socket, bytes);
 	
 	if (RecvProcess(Buffer, bytes, myuser) == -1)
 		return;

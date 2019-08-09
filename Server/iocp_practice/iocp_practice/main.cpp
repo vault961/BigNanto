@@ -141,6 +141,8 @@ int main(void) {
 			closesocket(Accept);
 			continue;
 		}
+		logger.write("New Connection %d", Accept);
+
 		AddSocket(Accept, saRemote);
 
 		PerHandleData = (LPPER_HANDLE_DATA)malloc(sizeof(PER_HANDLE_DATA));

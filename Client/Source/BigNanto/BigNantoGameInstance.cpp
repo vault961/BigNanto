@@ -287,6 +287,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::LOGOUT:
 	{
+
 		// 플레이어 리스트에 해당 캐릭터가 남아있는지 체크 
 		APlayerCharacter* User = nullptr;
 		if (PlayerList.Contains(packet.userID))
