@@ -23,6 +23,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Weapon.h"
 #include "Weapon_MagicWand.h"
+#include "BigNantoCameraShake.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -99,6 +100,8 @@ APlayerCharacter::APlayerCharacter()
 	PlayerUI->SetupAttachment(RootComponent);
 	PlayerUI->RelativeLocation = FVector(0.f, 0.f, 150.f);
 	PlayerUI->SetWidgetSpace(EWidgetSpace::Screen);
+
+	CameraShake = UBigNantoCameraShake::StaticClass();
 }
 
 APlayerCharacter::~APlayerCharacter()
@@ -458,15 +461,22 @@ void APlayerCharacter::Die()
 {
 	// 사망 로그
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"));
+	UWorld* World = GetWorld();
+
+	if (nullptr != World)
+	{
+		// 사망 이펙트
+		World->SpawnActor<ARingOutExplosion>(ARingOutExplosion::StaticClass(), GetActorTransform());
+		
+		// 카메라 쉐이크
+		if (nullptr != CameraShake)
+		{
+			World->GetFirstPlayerController()->PlayerCameraManager->PlayCameraShake(CameraShake);
+		}
+	}
 
 	if (IsMine)
 	{
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			World->SpawnActor<ARingOutExplosion>(ARingOutExplosion::StaticClass(), GetActorTransform());
-		}
-
 		anibody = (char)ECharacterAction::EA_Die;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 
@@ -477,7 +487,6 @@ void APlayerCharacter::Die()
 		}
 
 		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
-
-		Destroy();
 	}
+	Destroy();
 }

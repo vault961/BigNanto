@@ -263,7 +263,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				User->StopAttack();
 				break;
 			case (char)ECharacterAction::EA_Die:
-				User->Destroy();
+				//User->Destroy();
 				PlayerList.Remove(packet.userID);
 				break;
 			case (char)ECharacterAction::EA_Move:
@@ -278,14 +278,15 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			case (char)ECharacterAction::EA_StopSpecialAbility:
 				User->StopSpecialAbility();
 				break;
-
 			}
 		}
 		break;
 	}
 	case PACKET_TYPE::LOGOUT:
 	{
+		// 미췬 버그 
 		APlayerCharacter* User = PlayerList[packet.userID];
+		
 		if (nullptr == User)
 			return;
 		User->Destroy();
