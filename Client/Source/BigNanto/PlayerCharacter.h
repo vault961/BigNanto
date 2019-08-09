@@ -87,7 +87,7 @@ public:
 	// 플레이어 이름
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterInfo)
 	FString PlayerName;
-	wchar_t namearr[11];
+	wchar_t NameArr[11];	// 한글 입력을 위해서 만들어둔 배열
 
 	// 캐릭터 데미지 퍼센트
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterInfo)
@@ -105,6 +105,9 @@ public:
 	class UPlayerCharacterAnim* AnimInstance;
 	// 게임 인스턴스 레퍼런스
 	class UBigNantoGameInstance* GameInstance;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UCameraShake> CameraShake;
 
 	// 소유중인 무기
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterInfo)
@@ -197,4 +200,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void Die();
 
+	// 링아웃 이펙트 생성
+	virtual void PlayRingOutEffect();
 };

@@ -142,7 +142,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			FVector RandomLocation = CharacterSpawner->GetRandomPointInVolume();
 
 			// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
-			char buf[11]{ 0 };
+			char buf[100]{ 0 };
 
 			int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_UTF8(*MyName), MyName.Len() + 1);
 			//UE_LOG(LogTemp, Warning, TEXT("%s"), MyName.GetCharArray().GetData());
@@ -216,7 +216,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		}
 		if(!PlayerList.Contains(packet.userID))
 			PlayerList.Add(packet.userID, Character);
-		//PlayerList[packet.userID] = Character;
 		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName));
 		
 		break;
@@ -224,6 +223,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	case PACKET_TYPE::UPDATELOCATION:
 	{
 		APlayerCharacter* User = PlayerList[packet.userID];
+		if (nullptr == User)
+			return;
 		FVector fv(0, *(float*)packet.body, *(float*)(packet.body + 4));
 		User->UpdateLocation(fv, (uint8)*(char*)(packet.body + 8));
 		UE_LOG(LogTemp, Error, TEXT("userid:%d y:%f z:%f"),packet.userID, fv.Y, fv.Z);
@@ -233,6 +234,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	case PACKET_TYPE::UPDATEDMG:
 	{
 		APlayerCharacter* User = PlayerList[packet.userID];
+		if (nullptr == User)
+			return;
 		User->DamagePercent = *(float*)packet.body;
 
 		break;
@@ -241,7 +244,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	{
 		if (packet.userID != MyID) {
 			APlayerCharacter* User = PlayerList[packet.userID];
-
+			if (nullptr == User)
+				return;
 			switch (packet.body[0]) {
 			case (char)ECharacterAction::EA_Attack:
 				User->Attack();
@@ -259,6 +263,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				User->StopAttack();
 				break;
 			case (char)ECharacterAction::EA_Die:
+				User->PlayRingOutEffect();
 				User->Destroy();
 				PlayerList.Remove(packet.userID);
 				break;
@@ -274,14 +279,21 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			case (char)ECharacterAction::EA_StopSpecialAbility:
 				User->StopSpecialAbility();
 				break;
-
 			}
 		}
 		break;
 	}
 	case PACKET_TYPE::LOGOUT:
 	{
-		APlayerCharacter* User = PlayerList[packet.userID];
+
+		// 플레이어 리스트에 해당 캐릭터가 남아있는지 체크 
+		APlayerCharacter* User = nullptr;
+		if (PlayerList.Contains(packet.userID))
+			User = PlayerList[packet.userID];
+		
+		if (nullptr == User)
+			return;
+
 		User->Destroy();
 		PlayerList.Remove(packet.userID);
 

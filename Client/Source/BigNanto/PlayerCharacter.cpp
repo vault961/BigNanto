@@ -23,6 +23,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Weapon.h"
 #include "Weapon_MagicWand.h"
+#include "BigNantoCameraShake.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -99,6 +100,8 @@ APlayerCharacter::APlayerCharacter()
 	PlayerUI->SetupAttachment(RootComponent);
 	PlayerUI->RelativeLocation = FVector(0.f, 0.f, 150.f);
 	PlayerUI->SetWidgetSpace(EWidgetSpace::Screen);
+
+	CameraShake = UBigNantoCameraShake::StaticClass();
 }
 
 APlayerCharacter::~APlayerCharacter()
@@ -376,7 +379,8 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	// 현재행동 중단하고 EHit 상태로 바꿔주기
 	SetCurrentState(ECharacterState::EHit);
 	AnimInstance->PlayGetHit();
-	LaunchCharacter(HitDirection * (HitDamage * DamagePercent + 100.f), true, true);
+	float KnockBackValue = HitDamage * DamagePercent * 2.f;
+	LaunchCharacter((HitDirection * KnockBackValue) + (FVector::UpVector * .5f * KnockBackValue), true, true);
 
 	// 공격 받은 방향으로 넉백
 	
@@ -461,11 +465,7 @@ void APlayerCharacter::Die()
 
 	if (IsMine)
 	{
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			World->SpawnActor<ARingOutExplosion>(ARingOutExplosion::StaticClass(), GetActorTransform());
-		}
+		PlayRingOutEffect();
 
 		anibody = (char)ECharacterAction::EA_Die;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
@@ -477,7 +477,23 @@ void APlayerCharacter::Die()
 		}
 
 		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
-
 		Destroy();
+	}
+}
+
+void APlayerCharacter::PlayRingOutEffect()
+{
+	UWorld* World = GetWorld();
+
+	if (nullptr != World)
+	{
+		// 사망 이펙트
+		World->SpawnActor<ARingOutExplosion>(ARingOutExplosion::StaticClass(), GetActorTransform());
+
+		// 카메라 쉐이크
+		if (nullptr != CameraShake)
+		{
+			World->GetFirstPlayerController()->PlayerCameraManager->PlayCameraShake(CameraShake);
+		}
 	}
 }
