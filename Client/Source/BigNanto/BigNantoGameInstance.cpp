@@ -223,7 +223,9 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::UPDATELOCATION:
 	{
-		APlayerCharacter* User = PlayerList[packet.userID];
+		APlayerCharacter* User = nullptr;
+		if (PlayerList.Contains(packet.userID))
+			User = PlayerList[packet.userID];
 		if (nullptr == User)
 			return;
 		FVector fv(0, *(float*)packet.body, *(float*)(packet.body + 4));
@@ -234,7 +236,9 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::UPDATEDMG:
 	{
-		APlayerCharacter* User = PlayerList[packet.userID];
+		APlayerCharacter* User = nullptr;
+		if (PlayerList.Contains(packet.userID))
+			User = PlayerList[packet.userID];
 		if (nullptr == User)
 			return;
 		User->DamagePercent = *(float*)packet.body;
@@ -244,7 +248,9 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	case PACKET_TYPE::UPDATESTATE:
 	{
 		if (packet.userID != MyID) {
-			APlayerCharacter* User = PlayerList[packet.userID];
+			APlayerCharacter* User = nullptr;
+			if (PlayerList.Contains(packet.userID))
+				User = PlayerList[packet.userID];
 			if (nullptr == User)
 				return;
 			switch (packet.body[0]) {
