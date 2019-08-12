@@ -21,7 +21,8 @@ ACenterViewPawn::ACenterViewPawn()
 	CameraBoom->TargetArmLength = 2000.f;											// 카메라 거리
 	CameraBoom->SocketOffset = FVector(0.f, 0.f, 75.f);								// 카메라 오프셋 위치 (높이 조정)
 	CameraBoom->RelativeRotation = FRotator(0.f, 180.f, 0.f);						// 카메라 회전각도
-	CameraBoom->bDoCollisionTest = false;
+	CameraBoom->bDoCollisionTest = false;											// 충돌체크 안함
+	CameraBoom->bEnableCameraLag = true;											// 카메라 레그
 
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("SideViewCamera"));
 	CameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
@@ -65,38 +66,44 @@ void ACenterViewPawn::UpdateCameraPosition()
 	float LeftMost = -10000.f;
 	float RightMost = 10000.f;
 
-	float TopMost = 0.f;
-	float BottomMost = 0.f;
+	// 이녀석들은 안쓰는중
+	float TopMost = -10000.f;
+	float BottomMost = 10000.f;
 
-	float DefaultPosX = 500.f;
+	float MinArmLength = 1000.f;
+	float MaxArmLength = 2200.f;
 
 	// 플레이어 리스트 돌면서 플레이어들의 중간 지점을 계산
 	for (auto it : GameInstance->PlayerList)
 	{
-		TargetPosY += it.Value->GetActorLocation().Y;
-		TargetPosZ += it.Value->GetActorLocation().Z;
+		const float PlayerPosY = it.Value->GetActorLocation().Y;
+		const float PlayerPosZ = it.Value->GetActorLocation().Z;
 
-		// 가장 좌측, 우측에 있는 플레이어 포지션
+		TargetPosY += PlayerPosY;
+		TargetPosZ += PlayerPosZ;
+
+		// 가장 좌측, 우측에 있는 플레이어 포지션 구하기
 		// 좌측으로 갈 수록 Y포지션이 커진다요
 		// LeftMost가 가장 큰값이다요
-		if (LeftMost < it.Value->GetActorLocation().Y) LeftMost = it.Value->GetActorLocation().Y;
-		if (RightMost > it.Value->GetActorLocation().Y) RightMost = it.Value->GetActorLocation().Y;
+		if (PlayerPosY > LeftMost) LeftMost = PlayerPosY;
+		if (PlayerPosY < RightMost) RightMost = PlayerPosY;
+
+		//if (PlayerPosZ > TopMost) TopMost = PlayerPosZ;
 	}
 
 	FVector TargetPos = GetActorLocation();
 	TargetPos.Y = TargetPosY / PlayerListNum;
 	TargetPos.Z = TargetPosZ / PlayerListNum;
 
-	// WorkinProgress
 	if (PlayerListNum  == 1)
 	{
-		//CameraBoom->TargetArmLength = DefaultPosX;
+		CameraBoom->TargetArmLength = MinArmLength;
 	}
 	else
 	{
-		//CameraBoom->TargetArmLength = DefaultPosX + FMath::Clamp((LeftMost - RightMost), 0.f, 2000.f);
+		CameraBoom->TargetArmLength = FMath::Clamp(MinArmLength + (LeftMost - RightMost), MinArmLength, MaxArmLength);
 	}
-	CameraBoom->TargetArmLength = 1000.f;
+	//CameraBoom->TargetArmLength = 1000.f;
 
 	SetActorLocation(TargetPos);
 }

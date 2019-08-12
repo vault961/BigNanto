@@ -21,7 +21,7 @@ ARingOutExplosion::ARingOutExplosion()
 	PaperFlipComponent->SetupAttachment(RootComponent);
 	PaperFlipComponent->RelativeLocation = FVector(0.f, 0.f, 1400.f);
 	PaperFlipComponent->RelativeRotation = FRotator(0.f, 90.f, 0.f);
-	PaperFlipComponent->RelativeScale3D = FVector(3.f);
+	PaperFlipComponent->RelativeScale3D = FVector(4.f);
 	PaperFlipComponent->SetLooping(false);
 
 	RingOut_CPU = ConstructorHelpers::FObjectFinder<UPaperFlipbook>

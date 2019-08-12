@@ -5,13 +5,13 @@
 
 UBigNantoCameraShake::UBigNantoCameraShake()
 {
-	OscillationDuration = 0.5f;
+	OscillationDuration = 0.3f;
 	OscillationBlendInTime = 0.05f;
 	OscillationBlendOutTime = 0.05f;
 
-	LocOscillation.Y.Amplitude = FMath::RandRange(4.0f, 5.0f);
-	LocOscillation.Y.Frequency = FMath::RandRange(30.0f, 40.0f);
+	LocOscillation.Y.Amplitude = FMath::RandRange(10.0f, 20.0f);
+	LocOscillation.Y.Frequency = FMath::RandRange(40.0f, 50.0f);
 
-	LocOscillation.Z.Amplitude = FMath::RandRange(4.0f, 5.0f);
-	LocOscillation.Z.Frequency = FMath::RandRange(30.0f, 40.0f);
+	LocOscillation.Z.Amplitude = FMath::RandRange(10.0f, 20.0f);
+	LocOscillation.Z.Frequency = FMath::RandRange(40.0f, 50.0f);
 }
