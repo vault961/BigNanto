@@ -62,7 +62,6 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 Bo
 
 		bool successful = ConnectionSocket->Send(BUF, size, sent);
 
-
 		if (!successful) {
 			UE_LOG(LogTemp, Error, TEXT("Message can't send!!!!!!!!"));
 		}
@@ -320,11 +319,11 @@ void UBigNantoGameInstance::NameCheck(FString UserName, uint8 ClassType)
 	MyName = UserName + '\0';
 	MyClassType = ClassType;
 
-	if (MyName.Len() > 10)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, TEXT("이름은 10자를 넘을 수 없습니다"));
-		return;
-	}
+	//if (MyName.Len() > 10)
+	//{
+	//	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, TEXT("이름은 10자를 넘을 수 없습니다"));
+	//	return;
+	//}
 	
 	//for (auto it : MyName.GetCharArray()) {
 	//	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, TEXT("") +it);
@@ -335,6 +334,11 @@ void UBigNantoGameInstance::NameCheck(FString UserName, uint8 ClassType)
 	//		return;
 	//	}
 	//}
+
+	if (nullptr == CharacterSpawner)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, TEXT("캐릭터 스포너가 없습니다!!!!"));
+	}
 
 	SendMessage(PACKET_TYPE::NAMECHECK, TCHAR_TO_UTF8(*UserName), UserName.Len());
 }

@@ -97,6 +97,9 @@ APlayerCharacter::APlayerCharacter()
 	PlayerUI->SetWidgetSpace(EWidgetSpace::Screen);
 
 	CameraShake = UBigNantoCameraShake::StaticClass();
+
+	
+	SetActorScale3D(FVector::OneVector * 0.7f);
 }
 
 APlayerCharacter::~APlayerCharacter()
