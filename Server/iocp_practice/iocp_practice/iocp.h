@@ -148,7 +148,7 @@ public:
 	int Size();
 private:
 	std::queue<T> queue;
-	RWLock lock;
+	//RWLock lock;
 };
 
 
@@ -219,20 +219,31 @@ public:
 	int BufferLen{ 0 };
 };
 
+/*
+class Order : public Worker
+{
+public:
+	virtual void Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes);
+	
+};
+*/
 
 class Log {
 public:
 	FILE *fp;
-
+	CRITICAL_SECTION cri;
 	Log() {
 		SYSTEMTIME cur_time;
 		GetLocalTime(&cur_time);
 		char name[NAMELEN];
+		InitializeCriticalSection(&cri);
+
 		sprintf(name, "[%02d%02d%02d]log.txt", cur_time.wHour, cur_time.wMinute, cur_time.wSecond);
 		fp = fopen(name, "a");
 	}
 	
 	void write(char *format, ...) {
+		EnterCriticalSection(&cri);
 		SYSTEMTIME cur_time;
 		GetLocalTime(&cur_time);
 
@@ -243,9 +254,13 @@ public:
 		vfprintf(fp, format, args);
 		fprintf(fp, "\n");
 		va_end(args);
+		LeaveCriticalSection(&cri);
+
 	}
 	~Log() {
 		fclose(fp);
+		DeleteCriticalSection(&cri);
+
 	}
 };
 
@@ -270,6 +285,8 @@ public:
 
 	unsigned char DDOS;
 
+	char IPchar[30]{ 0 };
+
 	char IsEnter;
 	char Name[NAMELEN]{ 0 };
 	char CharacterClass;
@@ -281,7 +298,6 @@ public:
 	void SendFront(Sender* overlapped);
 	void PushAndSend(SentInfo& temp);
 	void GetOthersInfo();
-	RWLock wqueue;
 };
 
 
@@ -293,7 +309,7 @@ extern std::map<SOCKET, User*> UserMap;
 extern Log logger;
 extern std::map<ULONG, int> IPMap;
 extern CRITICAL_SECTION g_OrderQueueLock;
-
+//extern CRITICAL_SECTION UserMapLock;
 
 User& GetUser(SOCKET idx);
 void CompressArrays(SOCKET i);
@@ -324,7 +340,9 @@ void OrderQueue<T>::Push(T& packet) {
 	//lock.WriteLock();
 	queue.push(packet);
 	//lock.WriteUnLock();
-	SetEvent(OrderQueueEvent);
+	//SetEvent(OrderQueueEvent);
+
+	return;
 }
 
 template <typename T>
@@ -350,6 +368,6 @@ template <typename T>
 int OrderQueue<T>::Size() {
 	//lock.ReadLock();
 	//lock.ReadUnLock();
-
+	
 	return queue.size();
 }

@@ -11,20 +11,19 @@ std::map<SOCKET, User*> UserMap;
 Log logger;
 std::map<ULONG, int> IPMap;
 CRITICAL_SECTION g_OrderQueueLock;
-
+//CRITICAL_SECTION UserMapLock;
 
 using namespace std;
 
 void AddSocket(SOCKET Socket, SOCKADDR_IN Address) {
 	UserMapLock.WriteLock();
+
 	printf("socket : %d connected\n", Socket);
 	UserMap.insert(std::make_pair(Socket, new User(Socket)));
 	UserMap[Socket]->IP = Address.sin_addr.S_un.S_addr;
 
-	string str = inet_ntoa(Address.sin_addr);
-
-	strcat(UserMap[Socket]->ClientSocket.info, str.c_str());
-	strcat(UserMap[Socket]->ClientSocket.info, ":");
+	strcpy(UserMap[Socket]->IPchar, inet_ntoa(Address.sin_addr));
+	sprintf(UserMap[Socket]->ClientSocket.info, "%d:%s", UserMap[Socket]->ClientSocket.Socket, UserMap[Socket]->IPchar);
 
 	UserMapLock.WriteUnLock();
 }
@@ -41,7 +40,6 @@ void CompressArrays(SOCKET idx) {
 	UserMapLock.WriteLock();
 	IPMap[UserMap[idx]->IP]--;
 	UserMap.erase(idx);
-	
 	UserMapLock.WriteUnLock();
 }
 void Compress(char *source, int len) {
@@ -52,6 +50,8 @@ void Compress(char *source, int len) {
 void User::PushAndSend(SentInfo& temp) {
 	EnterCriticalSection(&ClientSocket.WQL);
 	if (ClientSocket.WaitingQueue.empty()) {
+		logger.write("[%s] PushAndSend empty() frontbuf : %c", ClientSocket.info, *(temp.Sp.get()->Body+FRONTLEN));
+
 		ClientSocket.WaitingQueue.Push(temp);
 		LeaveCriticalSection(&ClientSocket.WQL);
 
@@ -60,16 +60,19 @@ void User::PushAndSend(SentInfo& temp) {
 	}
 	else
 	{
+		logger.write("[%s] PushAndSend() !empty() frontbuf : %c", ClientSocket.info, *(temp.Sp.get()->Body+FRONTLEN));
+
+
 		ClientSocket.WaitingQueue.Push(temp);
 		LeaveCriticalSection(&ClientSocket.WQL);
+
 	}
 	
-
 }
 
+// 호출함수에서 lock 걸엇음.
 void User::GetOthersInfo() {
 	User* fromuser;
-	UserMapLock.ReadLock();
 	char source[SOURCELEN];
 	shared_ptr<Packet> ko;
 
@@ -93,7 +96,6 @@ void User::GetOthersInfo() {
 			}
 		}
 	}
-	UserMapLock.ReadUnLock();
 }
 
 template <typename T>
@@ -119,8 +121,9 @@ void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, int& len) {
 	DataAddGet(&myuser.Damage, source, sizeof(float), sum);
 	myuser.Name[len - sum - FRONTLEN] = '\0';
 	DataAddGet(myuser.Name, source, len-sum-FRONTLEN, sum);
-	strcat(myuser.ClientSocket.info, myuser.Name);
-	strcat(myuser.ClientSocket.info, ":");
+	memset(myuser.ClientSocket.info, 0, sizeof(myuser.ClientSocket.info));
+	sprintf(myuser.ClientSocket.info, "%d:%s:%s", myuser.ClientSocket.Socket, myuser.IPchar, myuser.Name);
+
 
 	printf("PosY : %f, PosZ : %f\n", myuser.PosY, myuser.PosZ);
 	printf("username : %s\n", myuser.Name);
@@ -160,6 +163,8 @@ shared_ptr<Packet> NameCheckProcess(User& myuser, char * Name, int NameLen) {
 	
 	if (flag == true) {
 		UserMapLock.ReadLock();
+		//EnterCriticalSection(&UserMapLock);
+
 		for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
 			if (it->second->IsEnter == 1) {
 				if (strcmp(ReqName, it->second->Name) == 0) {
@@ -169,6 +174,8 @@ shared_ptr<Packet> NameCheckProcess(User& myuser, char * Name, int NameLen) {
 			}
 		}
 		UserMapLock.ReadUnLock();
+		//LeaveCriticalSection(&UserMapLock);
+
 		if (isthere) {
 			printf("중복된이름\n");
 			buf[0] = (char)ERRORCODE::ALREADYNAME;
@@ -187,9 +194,9 @@ void GetOut(SOCKET Socket) {
 	// broadcast
 	EnterCriticalSection(&g_OrderQueueLock);
 	g_OrderQueue.Push(temp);
+	SetEvent(OrderQueueEvent);
 	LeaveCriticalSection(&g_OrderQueueLock);
 
-	SetEvent(OrderQueueEvent);
 
 	//close socket
 	printf("out! %d\n", Socket);
@@ -223,7 +230,7 @@ int RecvProcess(char * source, int retValue, User& myuser) {
 		receivedSize -= len;
 		sumlen += len;
 
-		logger.write("[%s] RecvProcess() after make packet, len:%d recvSize:%d sumlen:%d", myuser.ClientSocket.info, len, receivedSize, sumlen);
+		logger.write("[%s] RecvProcess() after make packet, len:%d recvSize:%d sumlen:%d frontbuf:%c", myuser.ClientSocket.info, len, receivedSize, sumlen, *Body);
 		switch (Type) {
 		case PACKET_TYPE::PLAYERSPAWN:
 			temppacket = make_shared<Packet>(Type, len, myuser.ClientSocket.Socket, Body, BROADCAST_MODE::ALL);
@@ -265,12 +272,12 @@ int RecvProcess(char * source, int retValue, User& myuser) {
 
 		EnterCriticalSection(&g_OrderQueueLock);
 		g_OrderQueue.Push(temp);
+		SetEvent(OrderQueueEvent);
 		LeaveCriticalSection(&g_OrderQueueLock);
 
-		SetEvent(OrderQueueEvent);
 
 		//len = (int)*(wchar_t*)(receivedBuffer + sumlen);
-		logger.write("[%s] RecvProcess() after(2) make packet, len:%d recvSize:%d sumlen:%d", myuser.ClientSocket.info, len, receivedSize, sumlen);
+		logger.write("[%s] RecvProcess() after(2) make packet, len:%d recvSize:%d sumlen:%d frontbuf:%c", myuser.ClientSocket.info, len, receivedSize, sumlen, *Body);
 	}
 
 	for (int k = 0; k < receivedSize; k++)
@@ -287,21 +294,19 @@ void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 
 	end = clock();
 	
+	
 	if ((double)(end - myuser.Begin) < 15.f) {
 		if (++myuser.DDOS > 10) {
 			GetOut(myuser.ClientSocket.Socket);
 			return;
 		}
-			
 	}
 	else {
 		if(myuser.DDOS > 0)
 			myuser.DDOS--;
 	}
-
 	myuser.Begin = end;
-	logger.write("[%s] Recver Work() %d", myuser.ClientSocket.info, bytes);
-	
+	logger.write("[%s] Recver Work() bytes:%d frontbuf:%c", myuser.ClientSocket.info, bytes, *(Buffer+FRONTLEN));
 	if (RecvProcess(Buffer, bytes, myuser) == -1)
 		return;
 	
@@ -310,22 +315,24 @@ void Recver::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 	wbuf.buf = Buffer;
 	wbuf.len = BufferLen;
 
-
 	WSARecv(Socket, &wbuf, 1, NULL, &Flags, this, NULL);
 }
 
 void User::SendFront(Sender* overlapped) {
 	WSABUF wBuf;
 	EnterCriticalSection(&ClientSocket.WQL);
+	
 	if (ClientSocket.WaitingQueue.empty()) {
+		logger.write("[%s] SendFront() empty()", ClientSocket.info);
 		LeaveCriticalSection(&ClientSocket.WQL);
-		delete overlapped;
 		return;
 	}
+	
 	SentInfo &target = ClientSocket.WaitingQueue.Front();
+
 	LeaveCriticalSection(&ClientSocket.WQL);
 
-	//logger.write("SendFront() sended:%d type:%d", target.Sended, target.Sp.get()->Body[USERLEN+LENLEN]);
+	logger.write("[%s] SendFront() sended:%d frontbuf:%c", ClientSocket.info, target.Sended, *(target.Sp.get()->Body + FRONTLEN));
 	wBuf.buf = target.Sp.get()->Body;
 	wBuf.len = target.MaxLen;
 	overlapped->sendinfo = target;
@@ -340,21 +347,54 @@ void Sender::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 	WSABUF wBuf;
 	sendinfo.Sended += bytes;
 
-	logger.write("[%s] Send Work() bytes:%d type:%d", myuser.ClientSocket.info, bytes, sendinfo.Sp.get()->Type);
+	logger.write("[%s] Send Work() bytes:%d frontbuf:%c", myuser.ClientSocket.info, bytes, *(sendinfo.Sp.get()->Body + FRONTLEN));
 
-	if (sendinfo.Sended >= sendinfo.MaxLen) {
-		EnterCriticalSection(&myuser.ClientSocket.WQL);
-		myuser.ClientSocket.WaitingQueue.Pop();
-		LeaveCriticalSection(&myuser.ClientSocket.WQL);
-		myuser.SendFront(this);
+	if (sendinfo.Sended == sendinfo.MaxLen) {
+		if (myuser.ClientSocket.WaitingQueue.empty()) {
+			logger.write("[%s] Send Work() empty() frontbuf:%c", myuser.ClientSocket.info, *(sendinfo.Sp.get()->Body + FRONTLEN));
+			LeaveCriticalSection(&myuser.ClientSocket.WQL);
+			return;
+		}
+		else {
+			logger.write("[%s] Send Work() !empty() frontbuf:%c", myuser.ClientSocket.info,*(sendinfo.Sp.get()->Body + FRONTLEN));
+			EnterCriticalSection(&myuser.ClientSocket.WQL);
+			myuser.ClientSocket.WaitingQueue.Pop();
+			if (myuser.ClientSocket.WaitingQueue.empty()) {
+				LeaveCriticalSection(&myuser.ClientSocket.WQL);
+				return;
+			}
+			else {
+				LeaveCriticalSection(&myuser.ClientSocket.WQL);
+				myuser.SendFront(this);
+			}
+		}
+		
 	}
 	else
 	{
+		logger.write("[%s] Send Work() sended < maxlen frontbuf:%c", myuser.ClientSocket.info, *(sendinfo.Sp.get()->Body + FRONTLEN));
+
 		wBuf.buf = sendinfo.Sp.get()->Body + sendinfo.Sended;
 		wBuf.len = sendinfo.MaxLen - sendinfo.Sended;
 		
 		WSASend(myuser.ClientSocket.Socket, &wBuf, 1, NULL, 0, this, NULL);
 	}
+	logger.write("[%s] End Send Work()", myuser.ClientSocket.info);
+
 }
+/*
+
+void Order::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
+	WSABUF wBuf;
+	SOCKET Socket = PerHandleData->Socket;
+	User& myuser = GetUser(Socket);
+
+	SentInfo &target = myuser.ClientSocket.WaitingQueue.Front();
+	wBuf.buf = target.Sp.get()->Body;
+	wBuf.len = target.MaxLen;
+	overlapped->sendinfo = target;
 
 
+	WSASend(myuser.ClientSocket.Socket, &wBuf, 1, NULL, 0, overlapped, NULL);
+}
+*/
