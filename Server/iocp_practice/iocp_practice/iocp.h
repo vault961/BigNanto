@@ -170,12 +170,22 @@ public:
 	}
 };
 
-typedef struct {
+class ClientSocket{
+public:
 	SOCKET Socket;
 	char ReceiveBuffer[MAX_SOCKET_BUFFER_SIZE];
 	int ReceivedBufferSize;
+	char info[100]{ 0 };
 	OrderQueue<SentInfo> WaitingQueue;
-} ClientSocket;
+	CRITICAL_SECTION WQL;
+
+	ClientSocket() {
+		InitializeCriticalSection(&WQL);
+	}
+	~ClientSocket() {
+		DeleteCriticalSection(&WQL);
+	}
+};
 
 
 
@@ -252,6 +262,7 @@ public:
 		ClientSocket.ReceivedBufferSize = 0;
 		Begin = clock();
 		DDOS = 0;
+		sprintf(ClientSocket.info, "%d:", socket);
 	}
 	ClientSocket ClientSocket;
 	clock_t Begin;
@@ -281,6 +292,8 @@ extern HANDLE CompletionPort;
 extern std::map<SOCKET, User*> UserMap;
 extern Log logger;
 extern std::map<ULONG, int> IPMap;
+extern CRITICAL_SECTION g_OrderQueueLock;
+
 
 User& GetUser(SOCKET idx);
 void CompressArrays(SOCKET i);
@@ -300,44 +313,43 @@ void DataAddGet(T* source, char* get, int size, int& sum);
 template <typename T>
 bool OrderQueue<T>::empty() {
 	bool val;
-	lock.ReadLock();
+	//lock.ReadLock();
 	val = queue.empty();
-	lock.ReadUnLock();
+	//lock.ReadUnLock();
 	return val;
 }
 
 template <typename T>
 void OrderQueue<T>::Push(T& packet) {
-	lock.WriteLock();
+	//lock.WriteLock();
 	queue.push(packet);
-	lock.WriteUnLock();
+	//lock.WriteUnLock();
 	SetEvent(OrderQueueEvent);
 }
 
 template <typename T>
 T& OrderQueue<T>::Pop() {
-	lock.WriteLock();
+	//lock.WriteLock();
 	T& front = queue.front();
 	queue.pop();
-	lock.WriteUnLock();
+	//lock.WriteUnLock();
 
 	return front;
 }
 
 template <typename T>
 T& OrderQueue<T>::Front() {
-	lock.ReadLock();
+	//lock.ReadLock();
 	T& front = queue.front();
-	lock.ReadUnLock();
+	//lock.ReadUnLock();
 
 	return front;
 }
 
 template <typename T>
 int OrderQueue<T>::Size() {
-	lock.ReadLock();
-	int size = queue.size();
-	lock.ReadUnLock();
+	//lock.ReadLock();
+	//lock.ReadUnLock();
 
-	return size;
+	return queue.size();
 }

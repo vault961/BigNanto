@@ -17,16 +17,25 @@ extern HANDLE CompletionPort;
 extern std::map<SOCKET, User*> UserMap;
 extern Log logger;
 extern map<ULONG, int> IPMap;
+extern CRITICAL_SECTION g_OrderQueueLock;
+
 void OrderQueueThread() {
 	while (1) {
 		WaitForSingleObject(OrderQueueEvent, INFINITE);
-		while (!g_OrderQueue.empty()) {
+		
+		while (1) {
+			EnterCriticalSection(&g_OrderQueueLock);
+			if (g_OrderQueue.empty()) {
+				LeaveCriticalSection(&g_OrderQueueLock);
+				break;
+			}
+
 			SentInfo temp(g_OrderQueue.Front());
-			BROADCAST_MODE BMode = temp.BMode;
 			g_OrderQueue.Pop();
-			
+			LeaveCriticalSection(&g_OrderQueueLock);
+
 			UserMapLock.ReadLock();
-			switch (BMode) {
+			switch (temp.BMode) {
 			case BROADCAST_MODE::ALL:
 				for (auto it = UserMap.begin(); it != UserMap.end(); it++)
 					(it->second)->PushAndSend(temp);
@@ -42,7 +51,9 @@ void OrderQueueThread() {
 				break;
 			}
 			UserMapLock.ReadUnLock();
+
 		}
+
 	}
 }
 
@@ -72,6 +83,8 @@ unsigned int __stdcall ServerWorkerThread(LPVOID CompletionPortID) {
 int main(void) {
 	int retValue;
 	
+	InitializeCriticalSection(&g_OrderQueueLock);
+
 	SYSTEM_INFO SystemInfo;
 	WSANETWORKEVENTS networkEvents;
 	//wsa
@@ -123,7 +136,8 @@ int main(void) {
 
 	while (1) {
 		RemoteLen = sizeof(saRemote);
-		
+		logger.write("Before Accept");
+
 		Accept = accept(ListenSocket, (SOCKADDR*)&saRemote, &RemoteLen);
 
 		UserMapLock.ReadLock();
@@ -141,9 +155,11 @@ int main(void) {
 			closesocket(Accept);
 			continue;
 		}
-		logger.write("New Connection %d", Accept);
+		logger.write("[%d:%s] New Connection", Accept,inet_ntoa(saRemote.sin_addr));
 
 		AddSocket(Accept, saRemote);
+
+		logger.write("[%d:%s] after AddSocket", Accept, inet_ntoa(saRemote.sin_addr));
 
 		PerHandleData = (LPPER_HANDLE_DATA)malloc(sizeof(PER_HANDLE_DATA));
 		PerHandleData->Socket = Accept;
@@ -167,7 +183,7 @@ int main(void) {
 	th1.join();
 	printf("server end");
 	CloseHandle(OrderQueueEvent);
-
+	DeleteCriticalSection(&g_OrderQueueLock);
 	// distroy
 	WSACleanup();
 	return 0;
