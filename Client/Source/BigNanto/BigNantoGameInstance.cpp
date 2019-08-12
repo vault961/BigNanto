@@ -13,6 +13,7 @@
 #include "PlayerCharacterAnim.h"
 #include "BigNantoPlayerController.h"
 #include "BigNantoGameModeBase.h"
+#include "CenterViewPawn.h"
 
 //#pragma comment (lib, "Ws2_32.lib")
 
@@ -197,10 +198,11 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		if (packet.userID == MyID)
 		{
 			Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
-
 			if (nullptr == PlayerController)
 				PlayerController = Cast<ABigNantoPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+
 			PlayerController->Possess(Character);
+			//PlayerController->SetViewTargetWithBlend(CenterViewPawn);
 			Character->MyID = MyID;
 		}
 		// 다른 캐릭터들 스폰

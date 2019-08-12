@@ -33,7 +33,7 @@ APlayerCharacter::APlayerCharacter()
 	// 캡슐 컴포넌트
 	GetCapsuleComponent()->InitCapsuleSize(40.f, 90.f);													// 캐릭터 캡슐 사이즈
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::BeginOverlap);	// 캐릭터 충돌 함수 위임
-	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;							// 캐릭터 위에 누가 올라 설 수 있는지
+	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;							// 캐릭터 위에 누가 올라 설 수 있는지
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));										// 캐릭터 충돌 채널 = Pawn 타입
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));											// 캐릭터 매쉬 충돌 채널 = NoCollision
 
@@ -42,19 +42,19 @@ APlayerCharacter::APlayerCharacter()
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationYaw = false;
 
-	// 카메라붐 생성 이후에 루트 컴포넌트에 붙여줌
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->bAbsoluteRotation = true;											// 캐릭터가 회전해도 카메라 회전에 영향 받지 않음
-	CameraBoom->bDoCollisionTest = false;											
-	CameraBoom->TargetArmLength = 1000.f;											// 카메라 거리
-	CameraBoom->SocketOffset = FVector(0.f, 0.f, 75.f);								// 카메라 오프셋 위치 (높이 조정
-	CameraBoom->RelativeRotation = FRotator(0.f, 180.f, 0.f);						// 카메라 회전각도
+	//// 카메라붐 생성 이후에 루트 컴포넌트에 붙여줌
+	//CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	//CameraBoom->SetupAttachment(RootComponent);
+	//CameraBoom->bAbsoluteRotation = true;											// 캐릭터가 회전해도 카메라 회전에 영향 받지 않음
+	//CameraBoom->bDoCollisionTest = false;											
+	//CameraBoom->TargetArmLength = 1000.f;											// 카메라 거리
+	//CameraBoom->SocketOffset = FVector(0.f, 0.f, 75.f);								// 카메라 오프셋 위치 (높이 조정
+	//CameraBoom->RelativeRotation = FRotator(0.f, 180.f, 0.f);						// 카메라 회전각도
 
-	// 카메라생성 후 붐에 붙여주기
-	SideViewCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("SideViewCamera"));
-	SideViewCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	SideViewCameraComponent->bUsePawnControlRotation = false;									// 카메라는 회전하지 않음
+	//// 카메라생성 후 붐에 붙여주기
+	//SideViewCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("SideViewCamera"));
+	//SideViewCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	//SideViewCameraComponent->bUsePawnControlRotation = false;									// 카메라는 회전하지 않음
 
 	// 캐릭터 무브먼트 설정
 	//GetCharacterMovement()->bOrientRotationToMovement = true; // 이동하는 방향으로 회전
@@ -84,11 +84,6 @@ APlayerCharacter::APlayerCharacter()
 	if (HitParticleAsset.Succeeded())
 		HitParticle = HitParticleAsset.Object;
 
-	// 사망 파티클
-	//static ConstructorHelpers::FClassFinder<AActor> RingOutParitcleAsset(TEXT("/Game/Blueprints/RingOutEffect"));
-	//if (RingOutParitcleAsset.Class)
-	//	RingOutParticle = RingOutParitcleAsset.Class;
-
 	// 캐릭터 UI
 	PlayerUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerUI"));
 	static ConstructorHelpers::FClassFinder<UUserWidget> PlayerUIAsset(TEXT("/Game/UMG/PlayerUI"));
@@ -112,6 +107,9 @@ APlayerCharacter::~APlayerCharacter()
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 시작하자마자 옆으로 보게 
+	SetActorRelativeRotation(FRotator(0.f, 90.f, 0.f));
 
 	// 애님 인스턴스 불러오기
 	if (GetMesh())
@@ -281,7 +279,6 @@ void APlayerCharacter::DoJump()
 		anibody= (char)ECharacterAction::EA_Jump;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody,1);
 
-
 		// 땅에 닿으면 점프 카운트 초기화
 		// 애님 노티파이에서도 초기화 해주긴 하는데 혹시 몰라서
 		if (GetCharacterMovement()->IsMovingOnGround() == true)
@@ -324,10 +321,10 @@ void APlayerCharacter::MoveRight(float val)
 
 void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 {
+	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" AttackHit()"));
+
 	// 피격한 캐릭터의 전방 벡터
 	FVector EnemyForwardVector = OverlappedWeapon->WeaponOwner->GetActorForwardVector();
-	//UE_LOG(LogTemp, Log, TEXT("EnemyForwardVector : %s"), *EnemyForwardVector.ToString());
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" AttackHit()"));
 
 	// 적과 나의 벡터 내적
 	// 내적 값이 양수면 적이 내 뒤에 있음, 음수면 적이 내 앞에 있음
@@ -357,8 +354,7 @@ void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 
 void APlayerCharacter::AbilityHit(AWeapon_MagicWand * OverlappedAbility)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" AbiltityHit()"));
-
+	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" AbiltityHit()"));
 
 	FVector EnemyForwardVector = OverlappedAbility->WeaponOwner->GetActorForwardVector();
 	HitandKnockback(EnemyForwardVector, OverlappedAbility->IncinerateDamage);
@@ -366,14 +362,15 @@ void APlayerCharacter::AbilityHit(AWeapon_MagicWand * OverlappedAbility)
 
 void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" HitandKnockback()"));
+	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" HitandKnockback()"));
+
 	// 나 일경우 Hit 애니메이션 전송, hit damage 처리
 	if (IsMine)
 	{
 		DamagePercent += HitDamage;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATEDMG, (char*)&DamagePercent, 4);
 		StopAttack();
-		StopSpecialAbility();
+		CallStopSpecialAbility();
 	}
 
 	// 현재행동 중단하고 EHit 상태로 바꿔주기
@@ -388,7 +385,8 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 }
 void APlayerCharacter::Attack()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" Attack()"));
+	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" Attack()"));
+
 	// 나일경우 attack 애니메이션 전송
 	if (IsMine)
 	{
@@ -410,10 +408,7 @@ void APlayerCharacter::Attack()
 
 void APlayerCharacter::StopAttack()
 {
-	//if (CurrentState != ECharacterState::EAttack)
-	//	return;
-
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" StopAttack()"));
+	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" StopAttack()"));
 	// 나 일경우 stopattack 신호 보냄.
 	if (IsMine)
 	{
@@ -461,7 +456,7 @@ void APlayerCharacter::StopSpecialAbility()
 void APlayerCharacter::Die()
 {
 	// 사망 로그
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"), false);
 
 	if (IsMine)
 	{
@@ -470,14 +465,17 @@ void APlayerCharacter::Die()
 		anibody = (char)ECharacterAction::EA_Die;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 
-		AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
-		if (CenterViewCamera)
-		{
-			GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
-		}
+		//AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
+		//if (CenterViewCamera)
+		//{
+		//	GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
+		//}
 
 		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
 		Destroy();
+
+		if(GameInstance->PlayerList.Contains(MyID))
+			GameInstance->PlayerList.Remove(MyID);
 	}
 }
 
