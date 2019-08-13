@@ -66,6 +66,7 @@ void User::GetOthersInfo() {
 				DataAddCopy(source, &fromuser->PosY, sizeof(float), sum);
 				DataAddCopy(source, &fromuser->PosZ, sizeof(float), sum);
 				DataAddCopy(source, &fromuser->Damage, sizeof(float), sum);
+				DataAddCopy(source, &fromuser->Kill, sizeof(unsigned int), sum);
 				DataAddCopy(source, fromuser->Name, namelen, sum);
 
 
@@ -105,7 +106,7 @@ void SpawnProcess(User& myuser, shared_ptr<Packet>& temppacket, int& len) {
 	sprintf(myuser.ClientSocket.info, "%d:%s:%s", myuser.ClientSocket.Socket, myuser.IPchar, myuser.Name);
 
 
-	printf("PosY : %f, PosZ : %f Dmg : %f Kill : %d\n", myuser.PosY, myuser.PosZ, myuser.Dmg, myuser.Kill);
+	printf("PosY : %f, PosZ : %f Dmg : %f Kill : %d\n", myuser.PosY, myuser.PosZ, myuser.Damage, myuser.Kill);
 	printf("username : %s\n", myuser.Name);
 
 }
@@ -199,7 +200,7 @@ int RecvProcess(char * source, int retValue, User& myuser) {
 		shared_ptr<Packet> temppacket;
 		PACKET_TYPE Type = (PACKET_TYPE)*(receivedBuffer + USERLEN + LENLEN + sumlen);
 
-		if (len > 50 || (unsigned char)Type > 6) {
+		if (len > 50 || (unsigned char)Type > 10) {
 			logger.write("[%s] not correct len type,len:%d recvSize:%d sumlen:%d", myuser.ClientSocket.info, len, receivedSize, sumlen);
 			GetOut(myuser.ClientSocket.Socket);
 			return -1;
@@ -240,13 +241,19 @@ int RecvProcess(char * source, int retValue, User& myuser) {
 		case PACKET_TYPE::UPDATESTATE:
 			temppacket = make_shared<Packet>(Type, len, myuser.ClientSocket.Socket, Body, BROADCAST_MODE::EXCEPTME);
 			if (*Body == (char)ECharacterAction::EA_Die) {
-				myuser.Kill = *(unsigned int*)(Body + 1);
-				printf("%dkill!", myuser.Kill);
 				myuser.IsEnter = 0;
 				memset(myuser.Name, 0, NAMELEN);
 			}
 
 			logger.write("[%s] Updatestate. val:%d", myuser.ClientSocket.info, (int)*Body);
+			break;
+		case PACKET_TYPE::KILL:
+			temppacket = make_shared<Packet>(Type, len, myuser.ClientSocket.Socket, Body, BROADCAST_MODE::ALL);
+			
+			myuser.Kill = *(unsigned int*)(Body);
+			printf("%d kill!", myuser.Kill);
+
+			logger.write("[%s] Kill", myuser.ClientSocket.info);
 			break;
 		}
 

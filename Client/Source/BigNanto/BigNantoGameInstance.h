@@ -23,6 +23,7 @@ enum class PACKET_TYPE {
 	UPDATESTATE,
 	NAMECHECK,
 	LOGOUT,
+	KILL,
 };
 enum class ERRORCODE
 {
