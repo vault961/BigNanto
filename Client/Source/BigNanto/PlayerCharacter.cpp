@@ -79,7 +79,7 @@ APlayerCharacter::APlayerCharacter()
 	LifeCount = 0;
 	NewDir = 0;
 	PlayerDir = 0;
-	Win = 0;
+	KillCount = 0;
 
 	CharacterClass = ECharacterClass::EUnknown;
 
@@ -334,7 +334,7 @@ void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 
 	// 피격한 캐릭터의 전방 벡터
 	FVector EnemyForwardVector = OverlappedWeapon->WeaponOwner->GetActorForwardVector();
-	LastHitOwner = OverlappedWeapon->WeaponOwner->ID;
+	LastHitOwner = OverlappedWeapon->WeaponOwner->PlayerID;
 
 	// 적과 나의 벡터 내적
 	// 내적 값이 양수면 적이 내 뒤에 있음, 음수면 적이 내 앞에 있음
@@ -365,6 +365,7 @@ void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 void APlayerCharacter::AbilityHit(AWeapon_MagicWand * OverlappedAbility)
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" AbiltityHit()"));
+	LastHitOwner = OverlappedAbility->WeaponOwner->PlayerID;
 
 	FVector EnemyForwardVector = OverlappedAbility->WeaponOwner->GetActorForwardVector();
 	HitandKnockback(EnemyForwardVector, OverlappedAbility->IncinerateDamage);
@@ -487,8 +488,8 @@ void APlayerCharacter::Die()
 		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
 		Destroy();
 
-		if(GameInstance->PlayerList.Contains(MyID))
-			GameInstance->PlayerList.Remove(MyID);
+		if(GameInstance->PlayerList.Contains(PlayerID))
+			GameInstance->PlayerList.Remove(PlayerID);
 	}
 }
 

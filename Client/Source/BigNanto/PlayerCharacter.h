@@ -136,10 +136,11 @@ public:
 	bool IsMine;
 	uint8 NewDir;
 	uint8 PlayerDir;
-	uint32 MyID;			// 플레이어 아이디
-	uint32 ID;
-	uint32 LastHitOwner;
-	uint32 Win;
+
+	uint32 PlayerID;		// 플레이어 아이디
+	uint32 LastHitOwner;	// 마지막으로 나를 공격한 사람
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 KillCount;		// 플레이어 카운트
 
 
 	FVector NewLocation;
@@ -151,8 +152,6 @@ public:
 	// 보정할 위치, 방향 수신
 	FVector UpdatedLocation;
 	FRotator UpdatedRotation;
-
-	bool bIsPlatformIgnored;
 
 	// ===================== 함수 =====================
 

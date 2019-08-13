@@ -32,5 +32,5 @@ public:
 	FVector GetRandomPointInVolume();
 
 	// 캐릭터 스폰 함수 (인자: 캐릭터 번호 (1 = 워리어, 2 = 위자드), IsMine인지 아닌지)
-	APlayerCharacter* SpawnCharacter(char CharacterNum, float PosY, float PosZ, float Damage, bool bIsMine);
+	APlayerCharacter* SpawnCharacter(char CharacterNum, float PosY, float PosZ, float Damage, uint32 KillCount, bool bIsMine);
 };

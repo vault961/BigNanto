@@ -105,7 +105,7 @@ public:
 	void PacketProcess(Packet& packet);
 
 	// 로그인 버퍼 생성 함수
-	int MakeLoginBuf(char * source, char cls, float Y, float Z, float damage, char * name, int namelen);
+	int MakeLoginBuf(char * source, char cls, float Y, float Z, float damage, uint32 KillCount, char * name, int namelen);
 	// 플레이어 입장
 	UFUNCTION(BlueprintCallable)
 	bool EnterGame(FString ServerIP, int32 ServerPort);

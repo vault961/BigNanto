@@ -142,7 +142,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			// 직업타임, Y좌표, Z좌표, 데미지 퍼센트, 이름 PlayerSpawn 타입 패킷으로 전송
 			char buf[100]{ 0 };
 
-			int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, TCHAR_TO_UTF8(*MyName), MyName.Len() + 1);
+			int len = MakeLoginBuf(buf, MyClassType, RandomLocation.Y, RandomLocation.Z, 0, 0, TCHAR_TO_UTF8(*MyName), MyName.Len() + 1);
 			//UE_LOG(LogTemp, Warning, TEXT("%s"), MyName.GetCharArray().GetData());
 			
 			// 서버에게 내 캐릭터 요청
@@ -174,12 +174,15 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		float PosY;
 		float PosZ;
 		float DamagePercent;
+		uint32 KillCount;
+
 		uint8 PlayerName[11]{ 0 };
 
 		DataAddGet(&CharacterClass, source, sizeof(char), sum);
 		DataAddGet(&PosY, source, sizeof(float), sum);
 		DataAddGet(&PosZ, source, sizeof(float), sum);
 		DataAddGet(&DamagePercent, source, sizeof(float), sum);
+		DataAddGet(&KillCount, source, sizeof(uint32), sum);
 
 		int NameLen = packet.len - sum - FRONTLEN;
 		DataAddGet(PlayerName, source, NameLen, sum);
@@ -190,18 +193,17 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		// 내 캐릭터 스폰
 		if (packet.userID == MyID)
 		{
-			Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, true);
+			Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, KillCount, true);
 			if (nullptr == PlayerController)
 				PlayerController = Cast<ABigNantoPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 
 			PlayerController->Possess(Character);
 			//PlayerController->SetViewTargetWithBlend(CenterViewPawn);
-			Character->MyID = MyID;
 		}
 		// 다른 캐릭터들 스폰
 		else
 		{
-			Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, false);
+			Character = CharacterSpawner->SpawnCharacter(CharacterClass, PosY, PosZ, DamagePercent, KillCount, false);
 		}
 
 		if (nullptr == Character)
@@ -209,10 +211,12 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			UE_LOG(LogTemp, Error, TEXT("내 캐릭터를 정상적으로 스폰할 수 없습니다"));
 			return;
 		}
+
 		if(!PlayerList.Contains(packet.userID))
 			PlayerList.Add(packet.userID, Character);
+
 		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName));
-		Character->ID = packet.userID;
+		Character->PlayerID = packet.userID;
 
 		break;
 	}
@@ -266,17 +270,18 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				break;
 			case (char)ECharacterAction::EA_Die:
 			{
-				uint32 WinnerID = *(uint32*)(packet.body + 1);
-				APlayerCharacter *Winner = nullptr;
-				if (PlayerList.Contains(WinnerID))
-					Winner = PlayerList[WinnerID];
-				if (nullptr != Winner) {
-					Winner->Win++;
+				uint32 KillerID = *(uint32*)(packet.body + 1);
+				APlayerCharacter *Killer = nullptr;
+				if (PlayerList.Contains(KillerID))
+					Killer = PlayerList[KillerID];
+				if (nullptr != Killer) {
+					Killer->KillCount++;
 				}
 
 				User->PlayRingOutEffect();
 				User->Destroy();
-				PlayerList.Remove(packet.userID);
+				if(PlayerList.Contains(packet.userID))
+					PlayerList.Remove(packet.userID);
 			}
 				break;
 			case (char)ECharacterAction::EA_Move:
@@ -313,12 +318,13 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 }
 
-int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float Z, float damage, char * name, int namelen) {
+int UBigNantoGameInstance::MakeLoginBuf(char * source, char cls, float Y, float Z, float damage, uint32 KillCount, char * name, int namelen) {
 	int sum = 0;
 	DataAddCopy(source, &cls, sizeof(char), sum);
 	DataAddCopy(source, &Y, sizeof(float), sum);
 	DataAddCopy(source, &Z, sizeof(float), sum);
 	DataAddCopy(source, &damage, sizeof(float), sum);
+	DataAddCopy(source, &KillCount, sizeof(uint32), sum);
 	DataAddCopy(source, name, namelen, sum);
 	return sum;
 }
