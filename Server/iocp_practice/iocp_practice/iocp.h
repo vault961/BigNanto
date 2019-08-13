@@ -15,7 +15,7 @@
 #define MAX_BUFFER_SIZE 512
 #define MAX_PACKET_SIZE 512
 #define MAX_SOCKET_BUFFER_SIZE 10000
-#define MAX_USER 50
+#define MAX_USER 64
 
 #define RECV_POSTED 1
 #define SENDER 2
@@ -219,14 +219,16 @@ public:
 	int BufferLen{ 0 };
 };
 
+
 /*
 class Order : public Worker
 {
 public:
 	virtual void Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes);
-	
+	SentInfo sendinfo;
 };
 */
+
 
 class Log {
 public:

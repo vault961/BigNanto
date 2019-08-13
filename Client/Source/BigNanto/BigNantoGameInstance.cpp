@@ -218,7 +218,8 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		if(!PlayerList.Contains(packet.userID))
 			PlayerList.Add(packet.userID, Character);
 		Character->PlayerName = FString(UTF8_TO_TCHAR(PlayerName));
-		
+		Character->ID = packet.userID;
+
 		break;
 	}
 	case PACKET_TYPE::UPDATELOCATION:
@@ -270,9 +271,19 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				User->StopAttack();
 				break;
 			case (char)ECharacterAction::EA_Die:
+			{
+				uint32 WinnerID = *(uint32*)(packet.body + 1);
+				APlayerCharacter *Winner = nullptr;
+				if (PlayerList.Contains(WinnerID))
+					Winner = PlayerList[WinnerID];
+				if (nullptr != Winner) {
+					Winner->Win++;
+				}
+
 				User->PlayRingOutEffect();
 				User->Destroy();
 				PlayerList.Remove(packet.userID);
+			}
 				break;
 			case (char)ECharacterAction::EA_Move:
 				User->AnimInstance->bIsMoving = true;

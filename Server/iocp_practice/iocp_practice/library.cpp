@@ -47,28 +47,7 @@ void Compress(char *source, int len) {
 		source[k + len] = source[k];
 }
 
-void User::PushAndSend(SentInfo& temp) {
-	EnterCriticalSection(&ClientSocket.WQL);
-	if (ClientSocket.WaitingQueue.empty()) {
-		logger.write("[%s] PushAndSend empty() frontbuf : %c", ClientSocket.info, *(temp.Sp.get()->Body+FRONTLEN));
 
-		ClientSocket.WaitingQueue.Push(temp);
-		LeaveCriticalSection(&ClientSocket.WQL);
-
-		Sender* PerIoData = new Sender();
-		SendFront(PerIoData);
-	}
-	else
-	{
-		logger.write("[%s] PushAndSend() !empty() frontbuf : %c", ClientSocket.info, *(temp.Sp.get()->Body+FRONTLEN));
-
-
-		ClientSocket.WaitingQueue.Push(temp);
-		LeaveCriticalSection(&ClientSocket.WQL);
-
-	}
-	
-}
 
 // 호출함수에서 lock 걸엇음.
 void User::GetOthersInfo() {
@@ -360,17 +339,28 @@ void Sender::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 			EnterCriticalSection(&myuser.ClientSocket.WQL);
 			myuser.ClientSocket.WaitingQueue.Pop();
 			if (myuser.ClientSocket.WaitingQueue.empty()) {
+				logger.write("[%s] Send Work() Pop and empty() frontbuf:%c", myuser.ClientSocket.info, *(sendinfo.Sp.get()->Body + FRONTLEN));
+
 				LeaveCriticalSection(&myuser.ClientSocket.WQL);
 				return;
 			}
 			else {
+				logger.write("[%s] Send Work() Pop and !empy() frontbuf:%c", myuser.ClientSocket.info, *(sendinfo.Sp.get()->Body + FRONTLEN));
+
+				SentInfo &target = myuser.ClientSocket.WaitingQueue.Front();
+
+				wBuf.buf = target.Sp.get()->Body;
+				wBuf.len = target.MaxLen;
+				sendinfo = target;
+
+				WSASend(myuser.ClientSocket.Socket, &wBuf, 1, NULL, 0, this, NULL);
 				LeaveCriticalSection(&myuser.ClientSocket.WQL);
-				myuser.SendFront(this);
+
 			}
 		}
 		
 	}
-	else
+	else if(sendinfo.Sended < sendinfo.MaxLen)
 	{
 		logger.write("[%s] Send Work() sended < maxlen frontbuf:%c", myuser.ClientSocket.info, *(sendinfo.Sp.get()->Body + FRONTLEN));
 
@@ -379,22 +369,35 @@ void Sender::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
 		
 		WSASend(myuser.ClientSocket.Socket, &wBuf, 1, NULL, 0, this, NULL);
 	}
+	else {
+		logger.write("[%s] Sendwork() exception", myuser.ClientSocket.info);
+
+		return; 
+	}
 	logger.write("[%s] End Send Work()", myuser.ClientSocket.info);
 
 }
-/*
 
-void Order::Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes) {
-	WSABUF wBuf;
-	SOCKET Socket = PerHandleData->Socket;
-	User& myuser = GetUser(Socket);
+void User::PushAndSend(SentInfo& temp) {
+	EnterCriticalSection(&ClientSocket.WQL);
+	if (ClientSocket.WaitingQueue.empty()) {
+		logger.write("[%s] PushAndSend empty() frontbuf : %c", ClientSocket.info, *(temp.Sp.get()->Body + FRONTLEN));
 
-	SentInfo &target = myuser.ClientSocket.WaitingQueue.Front();
-	wBuf.buf = target.Sp.get()->Body;
-	wBuf.len = target.MaxLen;
-	overlapped->sendinfo = target;
+		ClientSocket.WaitingQueue.Push(temp);
+		LeaveCriticalSection(&ClientSocket.WQL);
 
 
-	WSASend(myuser.ClientSocket.Socket, &wBuf, 1, NULL, 0, overlapped, NULL);
+		Sender* PerIoData = new Sender();
+		SendFront(PerIoData);
+	}
+	else
+	{
+		logger.write("[%s] PushAndSend() !empty() frontbuf : %c", ClientSocket.info, *(temp.Sp.get()->Body + FRONTLEN));
+
+
+		ClientSocket.WaitingQueue.Push(temp);
+		LeaveCriticalSection(&ClientSocket.WQL);
+
+	}
+
 }
-*/

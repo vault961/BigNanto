@@ -39,57 +39,21 @@ void OrderQueueThread() {
 			case BROADCAST_MODE::ALL:
 				for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
 					(it->second)->PushAndSend(temp);
-
-					/*
-					EnterCriticalSection(&it->second->ClientSocket.WQL);
-					if (it->second->ClientSocket.WaitingQueue.empty()) {
-						it->second->ClientSocket.WaitingQueue.Push(temp);
-						PostQueuedCompletionStatus(CompletionPort, 1, 0, new Order());
-					}
-					else {
-						it->second->ClientSocket.WaitingQueue.Push(temp);
-					}
-					LeaveCriticalSection(&it->second->ClientSocket.WQL);
-					*/
+					
 				}
 				break;
 			case BROADCAST_MODE::EXCEPTME:
 				for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
 					(it->second)->PushAndSend(temp);
-					/*
-					EnterCriticalSection(&it->second->ClientSocket.WQL);
-					if ((it->second)->ClientSocket.Socket != temp.Sp.get()->UserID) {
-						if (it->second->ClientSocket.WaitingQueue.empty()) {
-							it->second->ClientSocket.WaitingQueue.Push(temp);
-							PostQueuedCompletionStatus(CompletionPort, 1, 0, new Order());
-						}
-						else {
-							it->second->ClientSocket.WaitingQueue.Push(temp);
-						}
-					}
-					LeaveCriticalSection(&it->second->ClientSocket.WQL);
-					*/
-					//	(it->second)->PushAndSend(temp);
+					
 				}
 				break;
 			case BROADCAST_MODE::ONLYME:
 				User * myuser = UserMap[temp.Sp.get()->UserID];
 				if (myuser != nullptr) {
 					myuser->PushAndSend(temp);
-					/*
-					EnterCriticalSection(&myuser->ClientSocket.WQL);
-
-					if (myuser->ClientSocket.WaitingQueue.empty()) {
-						myuser->ClientSocket.WaitingQueue.Push(temp);
-						PostQueuedCompletionStatus(CompletionPort, 1, 0, new Order());
-					}
-					else {
-						myuser->ClientSocket.WaitingQueue.Push(temp);
-					}
-					LeaveCriticalSection(&myuser->ClientSocket.WQL);
-					*/
+					
 				}
-					//UserMap[temp.Sp.get()->UserID]->PushAndSend(temp);
 				break;
 			}
 			UserMapLock.ReadUnLock();
@@ -195,7 +159,7 @@ int main(void) {
 		IPMap[saRemote.sin_addr.S_un.S_addr]++;
 
 			
-		if (IPMap[saRemote.sin_addr.S_un.S_addr] >10) {
+		if (IPMap[saRemote.sin_addr.S_un.S_addr] > 10) {
 			printf("동일 ip 10명 초과접속\n");
 			closesocket(Accept);
 			UserMapLock.WriteUnLock();
