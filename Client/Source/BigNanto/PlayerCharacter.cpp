@@ -79,6 +79,8 @@ APlayerCharacter::APlayerCharacter()
 	LifeCount = 0;
 	NewDir = 0;
 	PlayerDir = 0;
+	Win = 0;
+
 	CharacterClass = ECharacterClass::EUnknown;
 
 	// 히트 파티클
@@ -332,6 +334,7 @@ void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 
 	// 피격한 캐릭터의 전방 벡터
 	FVector EnemyForwardVector = OverlappedWeapon->WeaponOwner->GetActorForwardVector();
+	LastHitOwner = OverlappedWeapon->WeaponOwner->ID;
 
 	// 적과 나의 벡터 내적
 	// 내적 값이 양수면 적이 내 뒤에 있음, 음수면 적이 내 앞에 있음
@@ -469,8 +472,11 @@ void APlayerCharacter::Die()
 	{
 		PlayRingOutEffect();
 
-		anibody = (char)ECharacterAction::EA_Die;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
+		//anibody = (char)ECharacterAction::EA_Die;
+		char DieBody[5];
+		DieBody[0] = (char)ECharacterAction::EA_Die;
+		FMemory::Memcpy(DieBody + 1, &LastHitOwner, sizeof(uint32));
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, DieBody, 5);
 
 		//AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
 		//if (CenterViewCamera)
