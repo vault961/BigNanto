@@ -491,12 +491,17 @@ void APlayerCharacter::Die()
 	{
 		PlayRingOutEffect();
 
-		//anibody = (char)ECharacterAction::EA_Die;
-		char DieBody[5];
-		DieBody[0] = (char)ECharacterAction::EA_Die;
-		FMemory::Memcpy(DieBody + 1, &LastHitOwner, sizeof(uint32));
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, DieBody, 5);
+		anibody = (char)ECharacterAction::EA_Die;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 
+
+		char DieBody[4];
+		FMemory::Memcpy(DieBody, &LastHitOwner, sizeof(uint32));
+		GameInstance->SendMessage(PACKET_TYPE::KILL, DieBody, 4);
+
+		
+
+		
 		//AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
 		//if (CenterViewCamera)
 		//{

@@ -40,6 +40,7 @@ enum class PACKET_TYPE {
 	UPDATESTATE,
 	NAMECHECK,
 	LOGOUT,
+	KILL,
 };
 enum class ECharacterAction
 {
@@ -276,6 +277,7 @@ public:
 		PosZ = 0;
 		Damage = 0;
 		Dir = 0;
+		Kill = 0;
 		ClientSocket.ReceivedBufferSize = 0;
 		Begin = clock();
 		DDOS = 0;
@@ -295,6 +297,7 @@ public:
 	float Damage;
 	float PosY;
 	float PosZ;
+	unsigned int Kill;
 	char Dir;
 
 	void SendFront(Sender* overlapped);

@@ -270,13 +270,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				break;
 			case (char)ECharacterAction::EA_Die:
 			{
-				uint32 KillerID = *(uint32*)(packet.body + 1);
-				APlayerCharacter *Killer = nullptr;
-				if (PlayerList.Contains(KillerID))
-					Killer = PlayerList[KillerID];
-				if (nullptr != Killer) {
-					Killer->KillCount++;
-				}
+				
 
 				User->PlayRingOutEffect();
 				User->Destroy();
@@ -312,6 +306,18 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 
 		User->Destroy();
 		PlayerList.Remove(packet.userID);
+
+		break;
+	}
+	case PACKET_TYPE::KILL:
+	{
+		uint32 KillerID = *(uint32*)(packet.body);
+		APlayerCharacter *Killer = nullptr;
+		if (PlayerList.Contains(KillerID))
+			Killer = PlayerList[KillerID];
+		if (nullptr != Killer) {
+			Killer->KillCount++;
+		}
 
 		break;
 	}
