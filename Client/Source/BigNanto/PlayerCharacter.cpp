@@ -80,6 +80,7 @@ APlayerCharacter::APlayerCharacter()
 	NewDir = 0;
 	PlayerDir = 0;
 	KillCount = 0;
+	LastHitOwner = 0;
 
 	CharacterClass = ECharacterClass::EUnknown;
 
