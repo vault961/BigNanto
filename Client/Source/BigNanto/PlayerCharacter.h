@@ -148,6 +148,10 @@ public:
 	FVector UpdatedLocation;
 	FRotator UpdatedRotation;
 
+	bool bIsPlatformIgnored;
+
+	// ===================== ÇÔ¼ö =====================
+
 	UFUNCTION()
 	void UpdateLocation(FVector New, uint8 Dir);
 	UFUNCTION()

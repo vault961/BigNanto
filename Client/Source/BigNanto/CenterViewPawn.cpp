@@ -70,8 +70,8 @@ void ACenterViewPawn::UpdateCameraPosition()
 	float TopMost = -10000.f;
 	float BottomMost = 10000.f;
 
-	float MinArmLength = 1000.f;
-	float MaxArmLength = 2000.f;
+	float MinArmLength = 800.f;
+	float MaxArmLength = 1800.f;
 
 	// 플레이어 리스트 돌면서 플레이어들의 중간 지점을 계산
 	for (auto it : GameInstance->PlayerList)

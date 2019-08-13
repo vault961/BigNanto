@@ -42,6 +42,7 @@ APlayerCharacter::APlayerCharacter()
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationYaw = false;
 
+	//--------------------- 슈퍼 스매시 브라더스 캠으로 전환 후 개인 카메라는 생성 안함 --------------------- 
 	//// 카메라붐 생성 이후에 루트 컴포넌트에 붙여줌
 	//CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	//CameraBoom->SetupAttachment(RootComponent);
@@ -55,10 +56,11 @@ APlayerCharacter::APlayerCharacter()
 	//SideViewCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("SideViewCamera"));
 	//SideViewCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	//SideViewCameraComponent->bUsePawnControlRotation = false;									// 카메라는 회전하지 않음
+	// -----------------------------------------------------------------------------------------------------
 
 	// 캐릭터 무브먼트 설정
-	//GetCharacterMovement()->bOrientRotationToMovement = true; // 이동하는 방향으로 회전
-	//GetCharacterMovement()->RotationRate = FRotator(0.f, 1000.f, 0.f); // 회전하는 비율
+	//GetCharacterMovement()->bOrientRotationToMovement = true;				// 이동하는 방향으로 회전 -> 회전은 굳이 안넣어줘도 될 듯
+	//GetCharacterMovement()->RotationRate = FRotator(0.f, 1000.f, 0.f);	// 회전하는 비율 
 	GetCharacterMovement()->GravityScale = 3.f;		// 중력값
 	GetCharacterMovement()->AirControl = 0.8f;		// 공중에서 컨트롤 할 수 있는 힘
 	GetCharacterMovement()->JumpZVelocity = 1300.f; // 점프력
@@ -172,7 +174,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 		}
 
 		SetActorLocation(UpdatedLocation, false);
-
+		GEngine->AddOnScreenDebugMessage(2, 3.f, FColor::Blue, FString::Printf(TEXT("%f"), GetVelocity().Size()));
 	}
 	else {
 		// 내 위치 송신
@@ -185,6 +187,8 @@ void APlayerCharacter::Tick(float DeltaTime)
 			FMemory::Memcpy(body + 8, &PlayerDir, sizeof(char));
 			GameInstance->SendMessage(PACKET_TYPE::UPDATELOCATION, body, 9);
 			SendDelay = 0;
+
+			GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::White, FString::Printf(TEXT("%f"), GetVelocity().Size()));
 		}
 		
 	}

@@ -15,14 +15,14 @@
 #include "BigNantoGameModeBase.h"
 #include "CenterViewPawn.h"
 
-//#pragma comment (lib, "Ws2_32.lib")
-
 UBigNantoGameInstance::UBigNantoGameInstance()
 {
 	NewPosition.X = 0;
 	BufArraySize = 0;
 	CurrentUserNum = 0;
 	sumLen = 0;
+	MyName = "Unknown";
+	MyClassType = 1;
 }
 
 void UBigNantoGameInstance::Init()
@@ -57,8 +57,7 @@ void UBigNantoGameInstance::SendMessage(PACKET_TYPE Type, char * Body, uint32 Bo
 	FMemory::Memcpy(BUF + FRONTLEN, Body, BodySize);
 
 	do {
-		//if (Type == PACKET_TYPE::UPDATESTATE)
-		//	UE_LOG(LogTemp, Error, TEXT("%d %d"), size, *(BUF+FRONTLEN));
+		//if (Type == PACKET_TYPE::UPDATESTATE) UE_LOG(LogTemp, Error, TEXT("%d %d"), size, *(BUF+FRONTLEN));
 
 		bool successful = ConnectionSocket->Send(BUF, size, sent);
 
@@ -96,6 +95,7 @@ void UBigNantoGameInstance::PacketHandler()
 			BufArraySize += ReadBytes;
 		}
 	}
+
 	// 배열 이동을 최소화하기위해 쌓인버퍼 모두 처리후 배열이동.
 	sumLen = 0;
 	while (BufArraySize > 0) {
@@ -124,8 +124,6 @@ void UBigNantoGameInstance::PacketHandler()
 
 void UBigNantoGameInstance::PacketProcess(Packet& packet) 
 {
-	FVector none;
-
 	switch (packet.type) {
 	case PACKET_TYPE::NAMECHECK:
 	{
@@ -153,19 +151,15 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			break;
 		case (char)ERRORCODE::TOOLONG:
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT(" 최대 10자 입니다."));
-
 			break;
 		case (char)ERRORCODE::ALREADYNAME:
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT(" 중복된 이름입니다."));
-
 			break;
 		case (char)ERRORCODE::NOTENGLISH:
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT(" 영어로만 입력해주세요"));
-
 			break;
 		case (char)ERRORCODE::TOOSHORT:
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT(" 1자 이상으로 입력해주세요"));
-
 			break;
 		}
 		
@@ -230,7 +224,7 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			return;
 		FVector fv(0, *(float*)packet.body, *(float*)(packet.body + 4));
 		User->UpdateLocation(fv, (uint8)*(char*)(packet.body + 8));
-		UE_LOG(LogTemp, Error, TEXT("userid:%d y:%f z:%f"),packet.userID, fv.Y, fv.Z);
+		//UE_LOG(LogTemp, Warning, TEXT("userid:%d y:%f z:%f"),packet.userID, fv.Y, fv.Z);
 
 		break;
 	}
@@ -292,7 +286,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 	}
 	case PACKET_TYPE::LOGOUT:
 	{
-
 		// 플레이어 리스트에 해당 캐릭터가 남아있는지 체크 
 		APlayerCharacter* User = nullptr;
 		if (PlayerList.Contains(packet.userID))

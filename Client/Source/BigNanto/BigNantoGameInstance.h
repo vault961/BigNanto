@@ -81,7 +81,10 @@ public:
 
 	// 내 유저 정보
 	uint32 MyID;			// 아이디
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString MyName;		// 이름
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 MyClassType;	// 직업 명
 
 	UPROPERTY()
