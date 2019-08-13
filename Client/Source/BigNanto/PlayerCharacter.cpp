@@ -32,7 +32,10 @@ APlayerCharacter::APlayerCharacter()
 
 	// 캡슐 컴포넌트
 	GetCapsuleComponent()->InitCapsuleSize(40.f, 90.f);													// 캐릭터 캡슐 사이즈
+
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::BeginOverlap);	// 캐릭터 충돌 함수 위임
+	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &APlayerCharacter::EndOverlap);
+
 	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;							// 캐릭터 위에 누가 올라 설 수 있는지
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));										// 캐릭터 충돌 채널 = Pawn 타입
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));											// 캐릭터 매쉬 충돌 채널 = NoCollision
@@ -81,6 +84,7 @@ APlayerCharacter::APlayerCharacter()
 	PlayerDir = 0;
 	KillCount = 0;
 	LastHitOwner = 0;
+	bIgnorePlatform = false;
 
 	CharacterClass = ECharacterClass::EUnknown;
 
@@ -102,7 +106,6 @@ APlayerCharacter::APlayerCharacter()
 	PlayerUI->SetWidgetSpace(EWidgetSpace::Screen);
 
 	CameraShake = UBigNantoCameraShake::StaticClass();
-
 	
 	SetActorScale3D(FVector::OneVector * 0.7f);
 }
@@ -156,7 +159,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 	}
 
 	PlayerLocation = GetActorLocation();
-	
+
 	// 플레이어 위치 보정
 	// 내 캐릭터가 아니면 위치 수신
 	if (!IsMine)
@@ -178,6 +181,8 @@ void APlayerCharacter::Tick(float DeltaTime)
 
 		SetActorLocation(UpdatedLocation, false);
 		GEngine->AddOnScreenDebugMessage(2, 3.f, FColor::Blue, FString::Printf(TEXT("%f"), GetVelocity().Size()));
+
+
 	}
 	else {
 		// 내 위치 송신
@@ -216,6 +221,9 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	// 막기
 	PlayerInputComponent->BindAction("SpecialAbility", IE_Pressed, this, &APlayerCharacter::CallSpecialAbility);
 	PlayerInputComponent->BindAction("SpecialAbility", IE_Released, this, &APlayerCharacter::CallStopSpecialAbility);
+	// 아래로 이동
+	PlayerInputComponent->BindAction("MoveDown", IE_Pressed, this, &APlayerCharacter::IgnorePlatform);
+	PlayerInputComponent->BindAction("MoveDown", IE_Released, this, &APlayerCharacter::BlockPlatform);
 }
 
 bool APlayerCharacter::GetWeaponActive() const
@@ -276,6 +284,14 @@ void APlayerCharacter::BeginOverlap(UPrimitiveComponent * OverlappedComponent, A
 			}
 		}
 	}
+	UE_LOG(LogTemp, Log, TEXT("%s 비긴 오버랩"), *OtherActor->GetName());
+}
+
+void APlayerCharacter::EndOverlap(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (false == bIgnorePlatform)
+		//SetCollisionResponseToPlatform(false);
+	UE_LOG(LogTemp, Log, TEXT("%s 앤드 오버랩"), *OtherActor->GetName());
 }
 
 void APlayerCharacter::DoJump()
@@ -395,6 +411,7 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorTransform());
 }
+
 void APlayerCharacter::Attack()
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" Attack()"));
@@ -508,5 +525,29 @@ void APlayerCharacter::PlayRingOutEffect()
 		{
 			World->GetFirstPlayerController()->PlayerCameraManager->PlayCameraShake(CameraShake);
 		}
+	}
+}
+
+void APlayerCharacter::IgnorePlatform()
+{
+	bIgnorePlatform = true;
+	//SetCollisionResponseToPlatform(true);
+}
+
+void APlayerCharacter::BlockPlatform()
+{
+	bIgnorePlatform = false;
+	//SetCollisionResponseToPlatform(false);
+}
+
+void APlayerCharacter::SetCollisionResponseToPlatform(bool bIsIgnore)
+{
+	if (true == bIsIgnore)
+	{
+		GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
+	}
+	else
+	{
+		GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
 	}
 }

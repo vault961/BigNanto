@@ -142,7 +142,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 KillCount;		// 플레이어 카운트
 
-
 	FVector NewLocation;
 	float NewYaw;
 
@@ -152,6 +151,9 @@ public:
 	// 보정할 위치, 방향 수신
 	FVector UpdatedLocation;
 	FRotator UpdatedRotation;
+
+	UPROPERTY(VisibleAnywhere)
+	bool bIgnorePlatform;
 
 	// ===================== 함수 =====================
 
@@ -168,6 +170,9 @@ public:
 		int32 OtherBodyIndex,
 		bool bFromSweep,
 		const FHitResult &SweepResult);
+
+	UFUNCTION()
+	void EndOverlap(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	// 점프
 	UFUNCTION()
@@ -209,4 +214,8 @@ public:
 
 	// 링아웃 이펙트 생성
 	virtual void PlayRingOutEffect();
+
+	void IgnorePlatform();
+	void BlockPlatform();
+	void SetCollisionResponseToPlatform(bool bIsIgnore);
 };
