@@ -221,15 +221,6 @@ public:
 };
 
 
-/*
-class Order : public Worker
-{
-public:
-	virtual void Work(LPPER_HANDLE_DATA PerHandleData, DWORD bytes);
-	SentInfo sendinfo;
-};
-*/
-
 
 class Log {
 public:
@@ -314,7 +305,6 @@ extern std::map<SOCKET, User*> UserMap;
 extern Log logger;
 extern std::map<ULONG, int> IPMap;
 extern CRITICAL_SECTION g_OrderQueueLock;
-//extern CRITICAL_SECTION UserMapLock;
 
 User& GetUser(SOCKET idx);
 void CompressArrays(SOCKET i);
@@ -334,45 +324,30 @@ void DataAddGet(T* source, char* get, int size, int& sum);
 template <typename T>
 bool OrderQueue<T>::empty() {
 	bool val;
-	//lock.ReadLock();
 	val = queue.empty();
-	//lock.ReadUnLock();
 	return val;
 }
 
 template <typename T>
 void OrderQueue<T>::Push(T& packet) {
-	//lock.WriteLock();
 	queue.push(packet);
-	//lock.WriteUnLock();
-	//SetEvent(OrderQueueEvent);
-
 	return;
 }
 
 template <typename T>
 T& OrderQueue<T>::Pop() {
-	//lock.WriteLock();
 	T& front = queue.front();
 	queue.pop();
-	//lock.WriteUnLock();
-
 	return front;
 }
 
 template <typename T>
 T& OrderQueue<T>::Front() {
-	//lock.ReadLock();
 	T& front = queue.front();
-	//lock.ReadUnLock();
-
 	return front;
 }
 
 template <typename T>
 int OrderQueue<T>::Size() {
-	//lock.ReadLock();
-	//lock.ReadUnLock();
-	
 	return queue.size();
 }
