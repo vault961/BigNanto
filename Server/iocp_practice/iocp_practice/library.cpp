@@ -11,7 +11,6 @@ std::map<SOCKET, User*> UserMap;
 Log logger;
 std::map<ULONG, int> IPMap;
 CRITICAL_SECTION g_OrderQueueLock;
-//CRITICAL_SECTION UserMapLock;
 
 using namespace std;
 
@@ -144,7 +143,6 @@ shared_ptr<Packet> NameCheckProcess(User& myuser, char * Name, int NameLen) {
 	
 	if (flag == true) {
 		UserMapLock.ReadLock();
-		//EnterCriticalSection(&UserMapLock);
 
 		for (auto it = UserMap.begin(); it != UserMap.end(); it++) {
 			if (it->second->IsEnter == 1) {
@@ -155,7 +153,6 @@ shared_ptr<Packet> NameCheckProcess(User& myuser, char * Name, int NameLen) {
 			}
 		}
 		UserMapLock.ReadUnLock();
-		//LeaveCriticalSection(&UserMapLock);
 
 		if (isthere) {
 			printf("중복된이름\n");
