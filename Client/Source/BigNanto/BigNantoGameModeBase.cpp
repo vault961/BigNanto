@@ -24,10 +24,13 @@ ABigNantoGameModeBase::ABigNantoGameModeBase()
 	if (CharacterMakeWidget.Succeeded())
 		CharacterMakeWidgetClass = CharacterMakeWidget.Class;
 
-	// 캐릭터 생성 위젯 클래스 연결
+	// 사망 위젯
 	static ConstructorHelpers::FClassFinder<UUserWidget> DieWidget(TEXT("/Game/UMG/DieUI"));
 	if (DieWidget.Succeeded())
 		DieWidgetClass = DieWidget.Class;
+
+	// 인게임 UI
+	InGameWidgetClass = ConstructorHelpers::FClassFinder<UUserWidget>(TEXT("/Game/UMG/InGameUI")).Class;
 }
 
 void ABigNantoGameModeBase::BeginPlay()
@@ -60,8 +63,9 @@ void ABigNantoGameModeBase::ChangeWidget(TSubclassOf<UUserWidget> NewWidegtClass
 		if (CurrentWidget != nullptr)
 		{
 			CurrentWidget->AddToViewport();
+
 			if (GameInstance->PlayerController)
-				GameInstance->PlayerController->OnGameUI();
+				GameInstance->PlayerController->OnUIMode();
 		}
 	}
 }
@@ -75,6 +79,6 @@ void ABigNantoGameModeBase::RemoveAllWidget()
 		CurrentWidget = nullptr;
 
 		if (GameInstance->PlayerController)
-			GameInstance->PlayerController->OffGameUI();
+			GameInstance->PlayerController->OnGameMode();
 	}
 }

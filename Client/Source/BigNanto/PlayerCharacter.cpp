@@ -59,7 +59,7 @@ APlayerCharacter::APlayerCharacter()
 	//SideViewCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("SideViewCamera"));
 	//SideViewCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	//SideViewCameraComponent->bUsePawnControlRotation = false;									// 카메라는 회전하지 않음
-	// -----------------------------------------------------------------------------------------------------
+	// ------------------------------------------------------------------------------------------------------
 
 	// 캐릭터 무브먼트 설정
 	//GetCharacterMovement()->bOrientRotationToMovement = true;				// 이동하는 방향으로 회전 -> 회전은 굳이 안넣어줘도 될 듯
@@ -106,7 +106,7 @@ APlayerCharacter::APlayerCharacter()
 	PlayerUI->SetWidgetSpace(EWidgetSpace::Screen);
 
 	CameraShake = UBigNantoCameraShake::StaticClass();
-	
+
 	SetActorScale3D(FVector::OneVector * 0.7f);
 }
 
@@ -133,10 +133,10 @@ void APlayerCharacter::BeginPlay()
 	if (ChildActorComp)
 	{
 		Weapon = Cast<AWeapon>(ChildActorComp->GetChildActor());
-		if(Weapon)
+		if (Weapon)
 			Weapon->WeaponOwner = this;
 	}
-	
+
 	GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());
 
 	PlayerLocation = GetActorLocation();
@@ -165,7 +165,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 	if (!IsMine)
 	{
 		UpdatedLocation = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
-		
+
 		////////// 테스트용 인풋
 		//AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
 		if (CurrentState == ECharacterState::EIdle || CurrentState == ECharacterState::EJump)
@@ -180,13 +180,11 @@ void APlayerCharacter::Tick(float DeltaTime)
 		}
 
 		SetActorLocation(UpdatedLocation, false);
-		GEngine->AddOnScreenDebugMessage(2, 3.f, FColor::Blue, FString::Printf(TEXT("%f"), GetVelocity().Size()));
-
-
+		//GEngine->AddOnScreenDebugMessage(2, 3.f, FColor::Blue, FString::Printf(TEXT("%f"), GetVelocity().Size()));
 	}
 	else {
 		// 내 위치 송신
-		
+
 		SendDelay += 1;
 		if (SendDelay == 3) {
 
@@ -196,11 +194,15 @@ void APlayerCharacter::Tick(float DeltaTime)
 			GameInstance->SendMessage(PACKET_TYPE::UPDATELOCATION, body, 9);
 			SendDelay = 0;
 
-			GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::White, FString::Printf(TEXT("%f"), GetVelocity().Size()));
+			//GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::White, FString::Printf(TEXT("%f"), GetVelocity().Size()));
 		}
-		
+
 	}
 
+	if (GetCurrentState() == ECharacterState::EJump && GetActorLocation().Z < DeltaZ)
+		IgnorePlatform(false);
+
+	DeltaZ = GetActorLocation().Z;
 }
 
 // Called to bind functionality to input
@@ -222,8 +224,8 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAction("SpecialAbility", IE_Pressed, this, &APlayerCharacter::CallSpecialAbility);
 	PlayerInputComponent->BindAction("SpecialAbility", IE_Released, this, &APlayerCharacter::CallStopSpecialAbility);
 	// 아래로 이동
-	PlayerInputComponent->BindAction("MoveDown", IE_Pressed, this, &APlayerCharacter::IgnorePlatform);
-	PlayerInputComponent->BindAction("MoveDown", IE_Released, this, &APlayerCharacter::BlockPlatform);
+	PlayerInputComponent->BindAction("MoveDown", IE_Pressed, this, &APlayerCharacter::SetIgnorePlatform);
+	PlayerInputComponent->BindAction("MoveDown", IE_Released, this, &APlayerCharacter::SetBlockPlatform);
 }
 
 bool APlayerCharacter::GetWeaponActive() const
@@ -289,9 +291,13 @@ void APlayerCharacter::BeginOverlap(UPrimitiveComponent * OverlappedComponent, A
 
 void APlayerCharacter::EndOverlap(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (false == bIgnorePlatform)
-		//SetCollisionResponseToPlatform(false);
-	UE_LOG(LogTemp, Log, TEXT("%s 앤드 오버랩"), *OtherActor->GetName());
+	if (IsMine)
+	{
+		if (false == bIgnorePlatform)
+			IgnorePlatform(false);
+		UE_LOG(LogTemp, Log, TEXT("%s 앤드 오버랩"), *OtherActor->GetName());
+
+	}
 }
 
 void APlayerCharacter::DoJump()
@@ -302,8 +308,8 @@ void APlayerCharacter::DoJump()
 			return;
 
 		// 나 일경우, defenthit 애니메이션 전송
-		anibody= (char)ECharacterAction::EA_Jump;
-		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody,1);
+		anibody = (char)ECharacterAction::EA_Jump;
+		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 
 		// 땅에 닿으면 점프 카운트 초기화
 		// 애님 노티파이에서도 초기화 해주긴 하는데 혹시 몰라서
@@ -318,6 +324,7 @@ void APlayerCharacter::DoJump()
 			SetCurrentState(ECharacterState::EJump);
 			LaunchCharacter(FVector(0.f, 0.f, 1.f) * GetCharacterMovement()->JumpZVelocity, false, true);
 			JumpCount++;
+			IgnorePlatform(true);
 		}
 	}
 	else
@@ -325,7 +332,7 @@ void APlayerCharacter::DoJump()
 		SetCurrentState(ECharacterState::EJump);
 		LaunchCharacter(FVector(0.f, 0.f, 1.f) * GetCharacterMovement()->JumpZVelocity, false, true);
 	}
-	
+
 }
 
 void APlayerCharacter::MoveRight(float val)
@@ -334,12 +341,12 @@ void APlayerCharacter::MoveRight(float val)
 	{
 		if (0 != val) {
 			SetActorRelativeRotation(FRotator(0.f, -90.f * FMath::RoundFromZero(val), 0.f));
-			if(val > 0)
+			if (val > 0)
 				PlayerDir = 1;
-			else if(val < 0)
+			else if (val < 0)
 				PlayerDir = 0;
 		}
-			
+
 		// 입력받은 방향으로 이동
 		AddMovementInput(FVector(0.f, -1.f, 0.f), val);
 	}
@@ -356,11 +363,11 @@ void APlayerCharacter::AttackHit(AWeapon* OverlappedWeapon)
 	// 적과 나의 벡터 내적
 	// 내적 값이 양수면 적이 내 뒤에 있음, 음수면 적이 내 앞에 있음
 	float HitDot = FVector::DotProduct(GetActorForwardVector(), EnemyForwardVector);
-	
+
 	if (AnimInstance)
 	{
 		// 적이 내 앞에 있고 방어 중 일시 (방패 히트 애니메이션)
-		if ((HitDot < 0 ) && CurrentState == ECharacterState::EDefend)
+		if ((HitDot < 0) && CurrentState == ECharacterState::EDefend)
 		{
 			// 나 일경우, defenthit 애니메이션 전송
 			if (IsMine)
@@ -408,7 +415,7 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	LaunchCharacter((HitDirection * KnockBackValue) + (FVector::UpVector * .5f * KnockBackValue), true, true);
 
 	// 공격 받은 방향으로 넉백
-	
+
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorTransform());
 }
 
@@ -444,12 +451,12 @@ void APlayerCharacter::StopAttack()
 		anibody = (char)ECharacterAction::EA_StopAttack;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 	}
-	
+
 	if (AnimInstance)
 	{
 		AnimInstance->bIsAttacking = false;
 	}
-	
+
 }
 
 void APlayerCharacter::CallSpecialAbility()
@@ -484,35 +491,30 @@ void APlayerCharacter::StopSpecialAbility()
 
 void APlayerCharacter::Die()
 {
+	if (CurrentState == ECharacterState::EDead)
+		return;
+
 	// 사망 로그
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("플레이어 ") + PlayerName + TEXT(" 사망"), false);
 
 	if (IsMine)
 	{
+		CurrentState = ECharacterState::EDead;
 		PlayRingOutEffect();
 
 		anibody = (char)ECharacterAction::EA_Die;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 
-
 		char DieBody[4];
 		FMemory::Memcpy(DieBody, &LastHitOwner, sizeof(uint32));
 		GameInstance->SendMessage(PACKET_TYPE::KILL, DieBody, 4);
-
 		
-
-		
-		//AActor* const CenterViewCamera = Cast<AActor>(GameInstance->CenterViewPawn);
-		//if (CenterViewCamera)
-		//{
-		//	GameInstance->PlayerController->Possess(GameInstance->CenterViewPawn);
-		//}
-
 		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
-		Destroy();
 
-		if(GameInstance->PlayerList.Contains(PlayerID))
+		if (GameInstance->PlayerList.Contains(PlayerID))
 			GameInstance->PlayerList.Remove(PlayerID);
+
+		Destroy();
 	}
 }
 
@@ -533,26 +535,35 @@ void APlayerCharacter::PlayRingOutEffect()
 	}
 }
 
-void APlayerCharacter::IgnorePlatform()
+void APlayerCharacter::SetIgnorePlatform()
 {
 	bIgnorePlatform = true;
-	//SetCollisionResponseToPlatform(true);
+	IgnorePlatform(true);
 }
 
-void APlayerCharacter::BlockPlatform()
+void APlayerCharacter::SetBlockPlatform()
 {
 	bIgnorePlatform = false;
-	//SetCollisionResponseToPlatform(false);
 }
 
-void APlayerCharacter::SetCollisionResponseToPlatform(bool bIsIgnore)
+void APlayerCharacter::IgnorePlatform(bool bIsIgnore)
 {
 	if (true == bIsIgnore)
 	{
+		if (IsMine)
+		{
+			anibody = (char)ECharacterAction::EA_IgnorePlatform;
+			GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
+		}
 		GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
 	}
 	else
 	{
+		if (IsMine)
+		{
+			anibody = (char)ECharacterAction::EA_BlockPlatform;
+			GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
+		}
 		GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
 	}
 }

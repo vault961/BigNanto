@@ -17,7 +17,7 @@ class BIGNANTO_API ABigNantoPlayerController : public APlayerController
 public:
 	virtual void BeginPlay() override;
 	
-	void OnGameUI();
+	void OnUIMode();
 
-	void OffGameUI();
+	void OnGameMode();
 };

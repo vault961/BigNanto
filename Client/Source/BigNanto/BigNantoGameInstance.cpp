@@ -131,7 +131,10 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 		switch (packet.body[0]) {
 		case (char)ERRORCODE::NOTERROR:
 		{
-			GameModeBase->RemoveAllWidget();
+			//GameModeBase->RemoveAllWidget();
+
+			GameModeBase->ChangeWidget(GameModeBase->InGameWidgetClass);
+			PlayerController->OnGameMode();
 
 			// 내 ID 받기
 			MyID = packet.userID;
@@ -270,8 +273,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				break;
 			case (char)ECharacterAction::EA_Die:
 			{
-				
-
 				User->PlayRingOutEffect();
 				User->Destroy();
 				if(PlayerList.Contains(packet.userID))
@@ -289,6 +290,12 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 				break;
 			case (char)ECharacterAction::EA_StopSpecialAbility:
 				User->StopSpecialAbility();
+				break;
+			case (char)ECharacterAction::EA_IgnorePlatform:
+				User->IgnorePlatform(true);
+				break;
+			case (char)ECharacterAction::EA_BlockPlatform:
+				User->IgnorePlatform(false);
 				break;
 			}
 		}

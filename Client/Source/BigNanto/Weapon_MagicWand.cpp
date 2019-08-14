@@ -26,7 +26,7 @@ AWeapon_MagicWand::AWeapon_MagicWand()
 
 	ChannelingTime = 0.f;
 	HitBoxOnOffTime = 0.1f;
-	IncinerateDamage = 30.f;
+	IncinerateDamage = 15.f;
 	bIsIncinerateOn = false;
 	bIsHitboxOn = false;
 

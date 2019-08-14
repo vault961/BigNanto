@@ -18,6 +18,7 @@ enum class ECharacterState : uint8
 	EDefend,		// 방어
 	EHit,			// 맞는 중
 	EChanneling,	// 집중 중
+	EDead,			// 사망
 };
 
 // 액션
@@ -35,6 +36,8 @@ enum class ECharacterAction : uint8
 	EA_Die,
 	EA_Move,
 	EA_StopMove,
+	EA_IgnorePlatform,
+	EA_BlockPlatform,
 };
 
 // 캐릭터 직업
@@ -155,6 +158,10 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	bool bIgnorePlatform;
 
+	// 이전 틱에서 캐릭터 위치
+	float DeltaZ;
+	
+
 	// ===================== 함수 =====================
 
 	UFUNCTION()
@@ -215,7 +222,7 @@ public:
 	// 링아웃 이펙트 생성
 	virtual void PlayRingOutEffect();
 
-	void IgnorePlatform();
-	void BlockPlatform();
-	void SetCollisionResponseToPlatform(bool bIsIgnore);
+	void SetIgnorePlatform();
+	void SetBlockPlatform();
+	void IgnorePlatform(bool bIsIgnore);
 };

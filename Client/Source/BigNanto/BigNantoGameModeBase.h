@@ -40,6 +40,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UUserWidget> DieWidgetClass;
 
+	// 인게임 UI
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<UUserWidget> InGameWidgetClass;
+
 	// 위젯 전환 함수
 	UFUNCTION(BlueprintCallable)
 	void ChangeWidget(TSubclassOf<UUserWidget> NewWidegtClass);
