@@ -444,7 +444,6 @@ void APlayerCharacter::Attack()
 
 void APlayerCharacter::StopAttack()
 {
-	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, PlayerName + TEXT(" StopAttack()"));
 	// 나 일경우 stopattack 신호 보냄.
 	if (IsMine)
 	{

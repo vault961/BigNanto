@@ -259,12 +259,6 @@ void UBigNantoGameInstance::PacketProcess(Packet& packet)
 			case (char)ECharacterAction::EA_Attack:
 				User->Attack();
 				break;
-			case (char)ECharacterAction::EA_Defend:
-				break;
-			case (char)ECharacterAction::EA_DefendHit:
-				break;
-			case (char)ECharacterAction::EA_Hit:
-				break;
 			case (char)ECharacterAction::EA_Jump:
 				User->DoJump();
 				break;
