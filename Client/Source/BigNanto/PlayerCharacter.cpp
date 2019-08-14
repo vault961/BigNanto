@@ -32,10 +32,8 @@ APlayerCharacter::APlayerCharacter()
 
 	// 캡슐 컴포넌트
 	GetCapsuleComponent()->InitCapsuleSize(40.f, 90.f);													// 캐릭터 캡슐 사이즈
-
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::BeginOverlap);	// 캐릭터 충돌 함수 위임
-	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &APlayerCharacter::EndOverlap);
-
+	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &APlayerCharacter::EndOverlap);		
 	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;							// 캐릭터 위에 누가 올라 설 수 있는지
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));										// 캐릭터 충돌 채널 = Pawn 타입
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));											// 캐릭터 매쉬 충돌 채널 = NoCollision
@@ -85,8 +83,8 @@ APlayerCharacter::APlayerCharacter()
 	KillCount = 0;
 	LastHitOwner = 0;
 	bIgnorePlatform = false;
-
 	CharacterClass = ECharacterClass::EUnknown;
+	SendDelay = 0;
 
 	// 히트 파티클
 	static ConstructorHelpers::FObjectFinder<UParticleSystem> HitParticleAsset(TEXT("/Game/StarterContent/Particles/P_Explosion"));
@@ -101,13 +99,14 @@ APlayerCharacter::APlayerCharacter()
 		PlayerUI->SetWidgetClass(PlayerUIAsset.Class);
 	}
 
-	PlayerUI->SetupAttachment(RootComponent);
-	PlayerUI->RelativeLocation = FVector(0.f, 0.f, 150.f);
-	PlayerUI->SetWidgetSpace(EWidgetSpace::Screen);
+	
+	PlayerUI->SetupAttachment(RootComponent);				// 캐릭터 UI를 루트 컴포넌트에 부착
+	PlayerUI->RelativeLocation = FVector(0.f, 0.f, 150.f);	// UI 위치
+	PlayerUI->SetWidgetSpace(EWidgetSpace::Screen);			// 위젯 공간 설정 (스크린으로)
 
-	CameraShake = UBigNantoCameraShake::StaticClass();
+	CameraShake = UBigNantoCameraShake::StaticClass();		// 카메라 쉐이크
 
-	SetActorScale3D(FVector::OneVector * 0.7f);
+	SetActorScale3D(FVector::OneVector * 0.7f);				// 캐릭터 스케일
 }
 
 APlayerCharacter::~APlayerCharacter()
@@ -137,11 +136,10 @@ void APlayerCharacter::BeginPlay()
 			Weapon->WeaponOwner = this;
 	}
 
+	// 게임 인스턴스 가져오기
 	GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());
 
-	PlayerLocation = GetActorLocation();
-	SendDelay = 0;
-
+	// 위젯에게 플레이어캐릭터 레퍼런스 전달
 	Cast<UBigUserWidget>(PlayerUI->GetUserWidgetObject())->PlayerCharacterRef = this;
 
 	//UE_LOG(LogTemp, Log, TEXT("My Owner is : %s"), *PlayerUI->GetOwner()->GetName());
@@ -151,53 +149,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (GetActorLocation().X != 0.f)
-	{
-		FVector ActorLocation = GetActorLocation();
-		ActorLocation.X = 0.f;
-		SetActorLocation(ActorLocation);
-	}
-
-	PlayerLocation = GetActorLocation();
-
-	// 플레이어 위치 보정
-	// 내 캐릭터가 아니면 위치 수신
-	if (!IsMine)
-	{
-		UpdatedLocation = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
-
-		////////// 테스트용 인풋
-		//AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
-		if (CurrentState == ECharacterState::EIdle || CurrentState == ECharacterState::EJump)
-		{
-			//FRotator NewRotation;
-			if (NewDir == 1) {
-				SetActorRelativeRotation(FRotator(0.f, -90.f, 0.f));
-			}
-			else {
-				SetActorRelativeRotation(FRotator(0.f, 90.f, 0.f));
-			}
-		}
-
-		SetActorLocation(UpdatedLocation, false);
-		//GEngine->AddOnScreenDebugMessage(2, 3.f, FColor::Blue, FString::Printf(TEXT("%f"), GetVelocity().Size()));
-	}
-	else {
-		// 내 위치 송신
-
-		SendDelay += 1;
-		if (SendDelay == 3) {
-
-			FMemory::Memcpy(body, &PlayerLocation.Y, sizeof(PlayerLocation.Y));
-			FMemory::Memcpy(body + 4, &PlayerLocation.Z, sizeof(PlayerLocation.Z));
-			FMemory::Memcpy(body + 8, &PlayerDir, sizeof(char));
-			GameInstance->SendMessage(PACKET_TYPE::UPDATELOCATION, body, 9);
-			SendDelay = 0;
-
-			//GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::White, FString::Printf(TEXT("%f"), GetVelocity().Size()));
-		}
-
-	}
+	CorrectLocation(DeltaTime);
 
 	if (GetCurrentState() == ECharacterState::EJump && GetActorLocation().Z < DeltaZ)
 		IgnorePlatform(false);
@@ -249,16 +201,67 @@ void APlayerCharacter::SetCurrentState(ECharacterState NewState)
 	CurrentState = NewState;
 }
 
+void APlayerCharacter::CorrectLocation(float DeltaTime)
+{
+	PlayerLocation = GetActorLocation();
+
+	// 캐릭터의 X좌표 0으로 고정
+	if (PlayerLocation.X != 0.f)
+	{
+		PlayerLocation.X = 0.f;
+		SetActorLocation(PlayerLocation);
+	}
+
+
+	// 플레이어 위치 보정
+	// 내 캐릭터가 아니면 위치 수신
+	if (!IsMine)
+	{
+		UpdatedLocation = FMath::VInterpTo(PlayerLocation, NewLocation, DeltaTime, 10.f);
+
+		////////// 테스트용 인풋
+		//AddMovementInput(FVector(0.f, -1.f, 0.f), 1.f);
+		if (CurrentState == ECharacterState::EIdle || CurrentState == ECharacterState::EJump)
+		{
+			//FRotator NewRotation;
+			if (NewDir == 1)
+			{
+				SetActorRelativeRotation(FRotator(0.f, -90.f, 0.f));
+			}
+			else
+			{
+				SetActorRelativeRotation(FRotator(0.f, 90.f, 0.f));
+			}
+		}
+
+		SetActorLocation(UpdatedLocation, false);
+		//GEngine->AddOnScreenDebugMessage(2, 3.f, FColor::Blue, FString::Printf(TEXT("%f"), GetVelocity().Size()));
+	}
+
+	else
+	{
+		// 내 위치 송신
+
+		SendDelay += 1;
+		if (SendDelay == 3)
+		{
+
+			FMemory::Memcpy(body, &PlayerLocation.Y, sizeof(PlayerLocation.Y));
+			FMemory::Memcpy(body + 4, &PlayerLocation.Z, sizeof(PlayerLocation.Z));
+			FMemory::Memcpy(body + 8, &PlayerDir, sizeof(char));
+			GameInstance->SendMessage(PACKET_TYPE::UPDATELOCATION, body, 9);
+			SendDelay = 0;
+
+			//GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::White, FString::Printf(TEXT("%f"), GetVelocity().Size()));
+		}
+
+	}
+}
+
 void APlayerCharacter::UpdateLocation(FVector New, uint8 Dir)
 {
 	NewLocation = New;
 	NewDir = Dir;
-	//if(!IsMine)
-	//	UE_LOG(LogTemp, Log, TEXT("PosY : %f, PosZ : %f"), NewLocation.Y, NewLocation.Z);
-}
-
-void APlayerCharacter::UpdateStatus()
-{
 }
 
 void APlayerCharacter::BeginOverlap(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
@@ -411,11 +414,13 @@ void APlayerCharacter::HitandKnockback(FVector HitDirection, float HitDamage)
 	// 현재행동 중단하고 EHit 상태로 바꿔주기
 	SetCurrentState(ECharacterState::EHit);
 	AnimInstance->PlayGetHit();
+	
+	// 캐릭터 넉백
+	// 넉백 로직 (맞은 방향 * 맞은데미지 * 캐릭터 데미지 퍼센트 * 2)
 	float KnockBackValue = HitDamage * DamagePercent * 2.f;
 	LaunchCharacter((HitDirection * KnockBackValue) + (FVector::UpVector * .5f * KnockBackValue), true, true);
 
-	// 공격 받은 방향으로 넉백
-
+	// 피격 이펙트 생성
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, GetActorTransform());
 }
 
@@ -464,8 +469,8 @@ void APlayerCharacter::CallSpecialAbility()
 	{
 		anibody = (char)ECharacterAction::EA_SpecialAbility;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
-		SpecialAbility();
 	}
+	SpecialAbility();
 }
 
 void APlayerCharacter::CallStopSpecialAbility()
@@ -474,8 +479,8 @@ void APlayerCharacter::CallStopSpecialAbility()
 	{
 		anibody = (char)ECharacterAction::EA_StopSpecialAbility;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
-		StopSpecialAbility();
 	}
+	StopSpecialAbility();
 }
 
 void APlayerCharacter::SpecialAbility()
@@ -501,13 +506,16 @@ void APlayerCharacter::Die()
 		CurrentState = ECharacterState::EDead;
 		PlayRingOutEffect();
 
+		// 사망 패킷 전송
 		anibody = (char)ECharacterAction::EA_Die;
 		GameInstance->SendMessage(PACKET_TYPE::UPDATESTATE, &anibody, 1);
 
+		// 나 죽인 사람에게 킬 패킷 전송
 		char DieBody[4];
 		FMemory::Memcpy(DieBody, &LastHitOwner, sizeof(uint32));
 		GameInstance->SendMessage(PACKET_TYPE::KILL, DieBody, 4);
 		
+		// 사망 위젯으로 전환
 		GameInstance->GameModeBase->ChangeWidget(GameInstance->GameModeBase->DieWidgetClass);
 
 		if (GameInstance->PlayerList.Contains(PlayerID))

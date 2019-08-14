@@ -23,8 +23,9 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	// ·çÆ® ¾À ÄÄÆ÷³ÍÆ®
 	UPROPERTY(EditAnywhere)
-	USceneComponent* RootScene;
+	USceneComponent* RootSceneComponent;
 
 	UPROPERTY(EditAnywhere)
 	class ACenterViewPawn* CenterViewPawn;

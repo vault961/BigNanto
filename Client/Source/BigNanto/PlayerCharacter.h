@@ -121,8 +121,6 @@ public:
 	// 피격 파티클
 	UParticleSystem* HitParticle;
 
-	// 사망 파티클(페이퍼2D)
-	
 	// 캐릭터 현재상태
 	UPROPERTY(VisibleAnywhere, Category = CharacterInfo)
 	ECharacterState CurrentState;
@@ -142,8 +140,10 @@ public:
 
 	uint32 PlayerID;		// 플레이어 아이디
 	uint32 LastHitOwner;	// 마지막으로 나를 공격한 사람
+
+	// 플레이어 카운트
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 KillCount;		// 플레이어 카운트
+	int32 KillCount;		
 
 	FVector NewLocation;
 	float NewYaw;
@@ -164,10 +164,8 @@ public:
 
 	// ===================== 함수 =====================
 
-	UFUNCTION()
+	void CorrectLocation(float DeltaTime);
 	void UpdateLocation(FVector New, uint8 Dir);
-	UFUNCTION()
-	void UpdateStatus();
 
 	// 충돌감지
 	UFUNCTION()
