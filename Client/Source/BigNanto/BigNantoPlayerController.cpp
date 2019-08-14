@@ -11,7 +11,7 @@ void ABigNantoPlayerController::BeginPlay()
 
 	bAutoManageActiveCameraTarget = false;
 
-	OnGameUI();
+	OnUIMode();
 
 	UBigNantoGameInstance* GameInstance = Cast<UBigNantoGameInstance>(GetGameInstance());
 	if (nullptr != GameInstance)
@@ -20,13 +20,13 @@ void ABigNantoPlayerController::BeginPlay()
 	}
 }
 
-void ABigNantoPlayerController::OnGameUI()
+void ABigNantoPlayerController::OnUIMode()
 {
 	SetInputMode(FInputModeUIOnly());
 	bShowMouseCursor = true;
 }
 
-void ABigNantoPlayerController::OffGameUI()
+void ABigNantoPlayerController::OnGameMode()
 {
 	SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
