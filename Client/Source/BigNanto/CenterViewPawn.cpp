@@ -60,15 +60,14 @@ void ACenterViewPawn::UpdateCameraPosition()
 	if (PlayerListNum <= 0)
 		return;
 
-	float TargetPosY = 0.f;
-	float TargetPosZ = 0.f;
+	// 가장 좌측, 우측에 있는 플레이어 위치 (Y좌표)
+	// 좌측으로 갈 수록 Y포지션이 커짐 
+	float MinPosY = -10000.f;
+	float MaxPosY = 10000.f;
 
-	float LeftMost = -10000.f;
-	float RightMost = 10000.f;
-
-	// 이녀석들은 안쓰는중
-	float TopMost = -10000.f;
-	float BottomMost = 10000.f;
+	// 가장 상단, 하단에 있는 플레이어 위치 (Z좌표)
+	float MinPosZ = 10000.f;
+	float MaxPosZ = -10000.f;
 
 	float MinArmLength = 800.f;
 	float MaxArmLength = 1800.f;
@@ -79,21 +78,18 @@ void ACenterViewPawn::UpdateCameraPosition()
 		const float PlayerPosY = it.Value->GetActorLocation().Y;
 		const float PlayerPosZ = it.Value->GetActorLocation().Z;
 
-		TargetPosY += PlayerPosY;
-		TargetPosZ += PlayerPosZ;
-
 		// 가장 좌측, 우측에 있는 플레이어 포지션 구하기
-		// 좌측으로 갈 수록 Y포지션이 커진다요
-		// LeftMost가 가장 큰값이다요
-		if (PlayerPosY > LeftMost) LeftMost = PlayerPosY;
-		if (PlayerPosY < RightMost) RightMost = PlayerPosY;
+		if (MinPosY < PlayerPosY) MinPosY = PlayerPosY;
+		if (PlayerPosY < MaxPosY) MaxPosY = PlayerPosY;
 
-		//if (PlayerPosZ > TopMost) TopMost = PlayerPosZ;
+		// 가장 상단, 하단에 있는 플레이어 포지션 구하기
+		if (PlayerPosZ < MinPosZ) MinPosZ = PlayerPosZ;
+		if (MaxPosZ < PlayerPosZ) MaxPosZ = PlayerPosZ;
 	}
 
 	FVector TargetPos = GetActorLocation();
-	TargetPos.Y = TargetPosY / PlayerListNum;
-	TargetPos.Z = TargetPosZ / PlayerListNum;
+	TargetPos.Y = (MinPosY + MaxPosY) / 2;
+	TargetPos.Z = (MinPosZ + MaxPosZ) / 2;
 
 	if (PlayerListNum  == 1)
 	{
@@ -101,7 +97,7 @@ void ACenterViewPawn::UpdateCameraPosition()
 	}
 	else
 	{
-		CameraBoom->TargetArmLength = FMath::Clamp(MinArmLength + (LeftMost - RightMost), MinArmLength, MaxArmLength);
+		CameraBoom->TargetArmLength = FMath::Clamp(MinArmLength + (MinPosY - MaxPosY), MinArmLength, MaxArmLength);
 	}
 
 	SetActorLocation(TargetPos);

@@ -73,7 +73,9 @@ unsigned int __stdcall ServerWorkerThread(LPVOID CompletionPortID) {
 	int ret;
 
 	while (1) {
-		ret = GetQueuedCompletionStatus(CompletionPort, &BytesTransferred, (LPDWORD)&PerHandleData, (LPOVERLAPPED*)&RecvData, INFINITE);
+		// GetQueuedCompletionStatus 3번째 인자 원래 LPDWORD로 형변환 되어있었는데 
+		// 내 컴퓨터로 돌리니까 오류 떠가지고 PULONG_PTR로 바꿨음 ㅇㅅaㅇ - 영균
+		ret = GetQueuedCompletionStatus(CompletionPort, &BytesTransferred, (PULONG_PTR)&PerHandleData, (LPOVERLAPPED*)&RecvData, INFINITE);
 		if (BytesTransferred == 0) {
 			GetOut(PerHandleData->Socket);
 			//close socket
